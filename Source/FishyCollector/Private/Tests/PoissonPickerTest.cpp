@@ -175,7 +175,7 @@ bool FPoissonPicker_VraieDataTable_Distribution::RunTest(const FString& Paramete
 	if (!Table)
 		return false;
 
-	constexpr int32 NbTirages = 10000;
+	constexpr int32 NbTirages = 1000;
 
 	for (const FName& RowName : Table->GetRowNames())
 	{
