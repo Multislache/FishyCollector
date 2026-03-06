@@ -65,6 +65,9 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
+
+		// Lancer la ligne (ou l'hamecon, comme vous preferez)
+		EnhancedInputComponent->BindAction(ThrowLineAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ThrowLine);
 	}
 	else
 	{
@@ -130,4 +133,20 @@ void AFishyCollectorCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AFishyCollectorCharacter::ThrowLine()
+{
+	if (!bIsInFishingZone) return;
+	DoThrowLine();
+}
+
+void AFishyCollectorCharacter::DoThrowLine_Implementation()
+{
+	UE_LOG(LogFishyCollector, Display, TEXT(">>> Lancer l'hameçon !"));
+}
+
+void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)
+{
+	bIsInFishingZone = bActive;
 }
