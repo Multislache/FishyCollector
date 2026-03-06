@@ -9,8 +9,24 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "FishingRod.h"
 #include "InputActionValue.h"
 #include "FishyCollector.h"
+
+
+void AFishyCollectorCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (FishingRodClass)
+	{
+		FishingRod = GetWorld()->SpawnActor<AFishingRod>(FishingRodClass);
+		if (FishingRod)
+		{
+			FishingRod->AttachToCharacter(this);
+		}
+	}
+}
 
 AFishyCollectorCharacter::AFishyCollectorCharacter()
 {
@@ -52,6 +68,8 @@ AFishyCollectorCharacter::AFishyCollectorCharacter()
 
 void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
@@ -66,8 +84,10 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
 
-		// Lancer la ligne (ou l'hamecon, comme vous preferez)
-		EnhancedInputComponent->BindAction(ThrowLineAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ThrowLine);
+		if (ThrowLineAction)
+		{
+			EnhancedInputComponent->BindAction(ThrowLineAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ThrowLine);
+		}
 	}
 	else
 	{
@@ -117,7 +137,6 @@ void AFishyCollectorCharacter::DoLook(float Yaw, float Pitch)
 {
 	if (GetController() != nullptr)
 	{
-		// add yaw and pitch input to controller
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
 	}
@@ -125,25 +144,29 @@ void AFishyCollectorCharacter::DoLook(float Yaw, float Pitch)
 
 void AFishyCollectorCharacter::DoJumpStart()
 {
-	// signal the character to jump
 	Jump();
 }
 
 void AFishyCollectorCharacter::DoJumpEnd()
 {
-	// signal the character to stop jumping
 	StopJumping();
 }
 
 void AFishyCollectorCharacter::ThrowLine()
 {
 	if (!bIsInFishingZone) return;
+	UE_LOG(LogFishyCollector, Display, TEXT("Hamecon lancé!"));
 	DoThrowLine();
 }
 
 void AFishyCollectorCharacter::DoThrowLine_Implementation()
 {
-	UE_LOG(LogFishyCollector, Display, TEXT(">>> Lancer l'hameçon !"));
+	UE_LOG(LogFishyCollector, Display, TEXT("Lancer l'hameçon !"));
+
+	if (FishingRod)
+	{
+		FishingRod->SetState(EFishingRodState::Lance);
+	}
 }
 
 void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)

@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class AFishingRod;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -30,6 +31,8 @@ class AFishyCollectorCharacter : public ACharacter
 	UCameraComponent* FollowCamera;
 	
 protected:
+
+	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* JumpAction;
@@ -59,6 +62,13 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category="Fishing")
 	bool bIsInFishingZone = false;
 
+	UPROPERTY(EditAnywhere, Category="Fishing")
+	TSubclassOf<AFishingRod> FishingRodClass;
+
+	UPROPERTY(BlueprintReadOnly, Category="Fishing")
+	AFishingRod* FishingRod;
+
+	
 public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoMove(float Right, float Forward);
@@ -77,8 +87,6 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, Category="Fishing")
 	void DoThrowLine();
-	
-	virtual void DoThrowLine_Implementation();
 
 public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
