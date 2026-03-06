@@ -18,7 +18,8 @@ public class FishyCollector : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"CableComponent"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

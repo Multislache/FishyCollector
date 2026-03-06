@@ -1,4 +1,6 @@
 ﻿#include "FishingRod.h"
+#include "CableComponent.h"
+#include "FishingHook.h"
 #include "GameFramework/Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
@@ -8,21 +10,42 @@ AFishingRod::AFishingRod()
 {
     PrimaryActorTick.bCanEverTick = false;
 
+    USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    RootComponent = Root;
+
     RodMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RodMesh"));
-    RootComponent = RodMesh;
+    RodMesh->SetupAttachment(RootComponent);
 
     LineAttachPoint = CreateDefaultSubobject<USceneComponent>(TEXT("LineAttachPoint"));
     LineAttachPoint->SetupAttachment(RodMesh);
+
+    FishingLine = CreateDefaultSubobject<UCableComponent>(TEXT("FishingLine"));
+    FishingLine->SetupAttachment(LineAttachPoint);
+    FishingLine->CableLength = 300.f;
+    FishingLine->NumSegments = 12;
+    FishingLine->CableWidth = 0.5f;
+    FishingLine->bAttachEnd = true;
+    FishingLine->SetVisibility(false);
+}
+
+void AFishingRod::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (FishingHookClass)
+    {
+        FishingHook = GetWorld()->SpawnActor<AFishingHook>(FishingHookClass);
+        if (FishingHook && FishingLine)
+        {
+            FishingLine->SetAttachEndToComponent(FishingHook->GetRootComponent());
+        }
+    }
 }
 
 void AFishingRod::AttachToCharacter(ACharacter* Character, FName SocketName)
 {
     if (!Character) return;
-    AttachToComponent(
-        Character->GetMesh(),
-        FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-        SocketName
-    );
+    AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 }
 
 void AFishingRod::DetachFromCharacter()

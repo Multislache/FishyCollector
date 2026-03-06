@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "CableComponent.h"
 #include "GameFramework/Actor.h"
 #include "FishingRod.generated.h"
 
@@ -15,6 +16,8 @@ enum class EFishingRodState : uint8
 	Tirer       UMETA(DisplayName = "Tirer")
 };
 
+class AFishingHook;
+
 UCLASS()
 class FISHYCOLLECTOR_API AFishingRod : public AActor
 {
@@ -24,6 +27,8 @@ public:
 	AFishingRod();
 
 protected:
+	virtual void BeginPlay() override;
+	
 	UPROPERTY(EditAnywhere,  BlueprintReadWrite, Category="Components")
 	UStaticMeshComponent* RodMesh;
 
@@ -32,6 +37,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Fishing")
 	EFishingRodState CurrentState = EFishingRodState::Repos;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UCableComponent* FishingLine;
+
+	UPROPERTY(EditAnywhere, Category="Fishing")
+	TSubclassOf<AFishingHook> FishingHookClass;
+
+	UPROPERTY(BlueprintReadOnly, Category="Fishing")
+	AFishingHook* FishingHook;
 
 public:
 	UFUNCTION(BlueprintCallable, Category="Fishing")
@@ -52,4 +66,5 @@ public:
 
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;
+
 };
