@@ -1,6 +1,7 @@
 ﻿#include "FishingRod.h"
 #include "CableComponent.h"
 #include "FishingHook.h"
+#include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
@@ -34,17 +35,25 @@ void AFishingRod::BeginPlay()
 
     if (FishingHookClass)
     {
-        FishingHook = GetWorld()->SpawnActor<AFishingHook>(FishingHookClass);
+        FTransform SpawnTransform = LineAttachPoint->GetComponentTransform();
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = this;
+
+        FishingHook = GetWorld()->SpawnActor<AFishingHook>(FishingHookClass, SpawnTransform, SpawnParams);
         if (FishingHook && FishingLine)
         {
             FishingLine->SetAttachEndToComponent(FishingHook->GetRootComponent());
         }
     }
+
+    if (FishingLine) FishingLine->SetVisibility(false);
+    if (FishingHook) FishingHook->SetActorHiddenInGame(true);
 }
 
 void AFishingRod::AttachToCharacter(ACharacter* Character, FName SocketName)
 {
     if (!Character) return;
+    OwnerCharacter = Character;
     AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 }
 
@@ -53,7 +62,7 @@ void AFishingRod::DetachFromCharacter()
     DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 }
 
-void AFishingRod::SetState(EFishingRodState NewState)
+void AFishingRod::SetState(EFishingRodState NewState, FVector LaunchDirection)
 {
     if (!CanTransitionTo(NewState))
     {
@@ -64,35 +73,89 @@ void AFishingRod::SetState(EFishingRodState NewState)
     EFishingRodState OldState = CurrentState;
     CurrentState = NewState;
     UE_LOG(LogFishyCollector, Display, TEXT("FishingRod: %d -> %d"), (uint8)OldState, (uint8)CurrentState);
-    OnStateChanged(OldState, CurrentState);
+    OnStateChanged(OldState, CurrentState, LaunchDirection);
 }
 
 bool AFishingRod::CanTransitionTo(EFishingRodState NewState) const
 {
     if (NewState == CurrentState) return false;
+    if (NewState == EFishingRodState::Repos) return true;
+
     switch (CurrentState)
     {
-        case EFishingRodState::Repos:
-            return NewState == EFishingRodState::Lance;
+    case EFishingRodState::Repos:
+        return NewState == EFishingRodState::Lance;
 
-        case EFishingRodState::Lance:
-            return NewState == EFishingRodState::Attente || NewState == EFishingRodState::Repos;
+    case EFishingRodState::Lance:
+        return NewState == EFishingRodState::Attente;
 
-        case EFishingRodState::Attente:
-            return NewState == EFishingRodState::Morsure || NewState == EFishingRodState::Repos;
+    case EFishingRodState::Attente:
+        return NewState == EFishingRodState::Morsure;
 
-        case EFishingRodState::Morsure:
-            return NewState == EFishingRodState::Tirer || NewState == EFishingRodState::Repos;
+    case EFishingRodState::Morsure:
+        return NewState == EFishingRodState::Tirer;
 
-        case EFishingRodState::Tirer:
-            return NewState == EFishingRodState::Repos;
-
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 
-void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState)
+void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection)
 {
-    
+    switch (NewState)
+    {
+    case EFishingRodState::Repos:
+        if (FishingLine) FishingLine->SetVisibility(false);
+        if (FishingHook) FishingHook->SetActorHiddenInGame(true);
+        break;
+
+    case EFishingRodState::Lance:
+        if (FishingLine) FishingLine->SetVisibility(true);
+        if (FishingHook)
+        {
+            FishingHook->SetActorHiddenInGame(false);
+
+            // On utilise la direction passée en paramètre
+            FVector ForwardDirection = LaunchDirection.IsNearlyZero()
+                ? OwnerCharacter->GetActorForwardVector() // fallback
+                : LaunchDirection;
+
+            FVector TraceStart = OwnerCharacter->GetActorLocation()
+                + ForwardDirection * 500.f
+                + FVector(0.f, 0.f, 500.f);
+
+            FVector TraceEnd = TraceStart + FVector(0.f, 0.f, -2000.f);
+
+            FHitResult HitResult;
+            FCollisionQueryParams QueryParams;
+            QueryParams.AddIgnoredActor(this);
+            QueryParams.AddIgnoredActor(OwnerCharacter);
+            QueryParams.AddIgnoredActor(FishingHook);
+
+            bool bHit = GetWorld()->LineTraceSingleByChannel(
+                HitResult, TraceStart, TraceEnd,
+                ECC_Visibility, QueryParams
+            );
+
+            FVector HookLocation = bHit
+                ? HitResult.ImpactPoint
+                : OwnerCharacter->GetActorLocation() + ForwardDirection * 500.f;
+
+            FishingHook->SetActorLocation(HookLocation);
+
+            DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Blue, false, 2.f);
+            DrawDebugSphere(GetWorld(), HookLocation, 10.f, 8, FColor::Red, false, 2.f);
+        }
+        break;
+
+    case EFishingRodState::Attente:
+    case EFishingRodState::Morsure:
+    case EFishingRodState::Tirer:
+        if (FishingLine) FishingLine->SetVisibility(true);
+        if (FishingHook) FishingHook->SetActorHiddenInGame(false);
+        break;
+
+    default:
+        break;
+    }
 }

@@ -17,6 +17,7 @@ enum class EFishingRodState : uint8
 };
 
 class AFishingHook;
+class ACharacter;
 
 UCLASS()
 class FISHYCOLLECTOR_API AFishingRod : public AActor
@@ -47,6 +48,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Fishing")
 	AFishingHook* FishingHook;
 
+	UPROPERTY(BlueprintReadOnly, Category="Fishing")
+	ACharacter* OwnerCharacter;
+
 public:
 	UFUNCTION(BlueprintCallable, Category="Fishing")
 	void AttachToCharacter(ACharacter* Character, FName SocketName = "hand_r");
@@ -58,12 +62,12 @@ public:
 	EFishingRodState GetCurrentState() const { return CurrentState; }
 
 	UFUNCTION(BlueprintCallable, Category="Fishing")
-	void SetState(EFishingRodState NewState);
+	void SetState(EFishingRodState NewState, FVector LaunchDirection = FVector::ZeroVector);
 
 	UFUNCTION(BlueprintNativeEvent, Category="Fishing")
-	void OnStateChanged(EFishingRodState OldState, EFishingRodState NewState);
-	virtual void OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState);
-
+	void OnStateChanged(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection);
+	virtual void OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection);
+	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;
 

@@ -17,12 +17,5 @@ AFishingHook::AFishingHook()
 
 	HookMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HookMesh"));
 	HookMesh->SetupAttachment(RootComponent);
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	if (SphereMesh.Succeeded())
-	{
-		HookMesh->SetStaticMesh(SphereMesh.Object);
-		HookMesh->SetRelativeScale3D(FVector(0.05f));
-		HookMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
+	HookMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }

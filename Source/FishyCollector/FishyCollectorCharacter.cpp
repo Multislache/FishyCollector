@@ -161,11 +161,24 @@ void AFishyCollectorCharacter::ThrowLine()
 
 void AFishyCollectorCharacter::DoThrowLine_Implementation()
 {
-	UE_LOG(LogFishyCollector, Display, TEXT("Lancer l'hameçon !"));
+	if (!FishingRod) return;
 
-	if (FishingRod)
+	if (FishingRod->GetCurrentState() == EFishingRodState::Repos)
 	{
-		FishingRod->SetState(EFishingRodState::Lance);
+		FVector LaunchDirection = FVector::ForwardVector;
+		if (AController* C = GetController())
+		{
+			FRotator YawOnly = FRotator(0.f, C->GetControlRotation().Yaw, 0.f);
+			LaunchDirection = FRotationMatrix(YawOnly).GetUnitAxis(EAxis::X);
+		}
+
+		UE_LOG(LogFishyCollector, Display, TEXT("Lancer l'hameçon !"));
+		FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
+	}
+	else
+	{
+		UE_LOG(LogFishyCollector, Display, TEXT("Ramener l'hameçon !"));
+		FishingRod->SetState(EFishingRodState::Repos);
 	}
 }
 
