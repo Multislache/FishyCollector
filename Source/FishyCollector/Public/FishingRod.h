@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "CableComponent.h"
 #include "GameFramework/Actor.h"
+#include "Sound/SoundBase.h"
 #include "FishingRod.generated.h"
 
 
@@ -18,6 +19,8 @@ enum class EFishingRodState : uint8
 
 class AFishingHook;
 class ACharacter;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFishBite);
 
 UCLASS()
 class FISHYCOLLECTOR_API AFishingRod : public AActor
@@ -67,8 +70,24 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category="Fishing")
 	void OnStateChanged(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection);
 	virtual void OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnFishBite OnFishBite;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* SplashSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* RodSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* FishBiteSound;
 	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;
-
+	
+	FTimerHandle FishBiteTimerHandle;
+	
+	void StartWaitingForBite();
+	void TriggerFishBite();
 };

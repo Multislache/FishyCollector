@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
 
 AFishingRod::AFishingRod()
@@ -113,6 +114,10 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
         if (FishingLine) FishingLine->SetVisibility(true);
         if (FishingHook)
         {
+            if (RodSound)
+            {
+                UGameplayStatics::PlaySoundAtLocation(this, RodSound, GetActorLocation());
+            }
             FishingHook->SetActorHiddenInGame(false);
 
             // On utilise la direction passée en paramètre
@@ -149,7 +154,18 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
         break;
 
     case EFishingRodState::Attente:
+        if (SplashSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, SplashSound, FishingHook->GetActorLocation());
+        }
+        StartWaitingForBite();
+        break;
     case EFishingRodState::Morsure:
+        if (FishBiteSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, FishBiteSound, FishingHook->GetActorLocation());
+        }
+        break;
     case EFishingRodState::Tirer:
         if (FishingLine) FishingLine->SetVisibility(true);
         if (FishingHook) FishingHook->SetActorHiddenInGame(false);
@@ -158,4 +174,24 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
     default:
         break;
     }
+}
+
+void AFishingRod::StartWaitingForBite()
+{
+    float RandomDelay = FMath::RandRange(5.0f, 15.0f);
+    UE_LOG(LogFishyCollector, Display, TEXT("En attente d'une morsure... (%.1f secondes)"), RandomDelay);
+
+    GetWorldTimerManager().SetTimer(
+        FishBiteTimerHandle,
+        this,
+        &AFishingRod::TriggerFishBite,
+        RandomDelay,
+        false
+    );
+}
+
+void AFishingRod::TriggerFishBite()
+{
+    UE_LOG(LogFishyCollector, Display, TEXT("Un poisson a mordu !"));
+    SetState(EFishingRodState::Morsure);
 }
