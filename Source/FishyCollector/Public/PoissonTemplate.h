@@ -28,4 +28,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
 	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
+	UTexture2D* Icone;
 };

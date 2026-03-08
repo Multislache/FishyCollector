@@ -1,12 +1,15 @@
 ﻿#include "FishingRod.h"
 #include "CableComponent.h"
 #include "FishingHook.h"
+#include "PoissonTemplate.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
+#include "FishyCollectorGameMode.h"
+#include "Blueprint/UserWidget.h"
 
 AFishingRod::AFishingRod()
 {
@@ -86,16 +89,12 @@ bool AFishingRod::CanTransitionTo(EFishingRodState NewState) const
     {
     case EFishingRodState::Repos:
         return NewState == EFishingRodState::Lance;
-
     case EFishingRodState::Lance:
         return NewState == EFishingRodState::Attente;
-
     case EFishingRodState::Attente:
         return NewState == EFishingRodState::Morsure;
-
     case EFishingRodState::Morsure:
         return NewState == EFishingRodState::Tirer;
-
     default:
         return false;
     }
@@ -103,31 +102,28 @@ bool AFishingRod::CanTransitionTo(EFishingRodState NewState) const
 
 void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection)
 {
+    if (NewState != EFishingRodState::Morsure && FishingWidgetInstance)
+    {
+        FishingWidgetInstance->RemoveFromParent();
+        FishingWidgetInstance = nullptr;
+    }
+
     switch (NewState)
     {
     case EFishingRodState::Repos:
+        GetWorldTimerManager().ClearAllTimersForObject(this);
         if (FishingLine) FishingLine->SetVisibility(false);
         if (FishingHook) FishingHook->SetActorHiddenInGame(true);
         break;
 
     case EFishingRodState::Lance:
+        if (!OwnerCharacter || !FishingHook) return;
         if (FishingLine) FishingLine->SetVisibility(true);
-        if (FishingHook)
+        if (RodSound) UGameplayStatics::PlaySoundAtLocation(this, RodSound, GetActorLocation());
+
         {
-            if (RodSound)
-            {
-                UGameplayStatics::PlaySoundAtLocation(this, RodSound, GetActorLocation());
-            }
-
-            // On utilise la direction passée en paramètre
-            FVector ForwardDirection = LaunchDirection.IsNearlyZero()
-                ? OwnerCharacter->GetActorForwardVector() // fallback
-                : LaunchDirection;
-
-            FVector TraceStart = OwnerCharacter->GetActorLocation()
-                + ForwardDirection * 500.f
-                + FVector(0.f, 0.f, 500.f);
-
+            FVector ForwardDirection = LaunchDirection.IsNearlyZero() ? OwnerCharacter->GetActorForwardVector() : LaunchDirection;
+            FVector TraceStart = OwnerCharacter->GetActorLocation() + ForwardDirection * 500.f + FVector(0.f, 0.f, 500.f);
             FVector TraceEnd = TraceStart + FVector(0.f, 0.f, -2000.f);
 
             FHitResult HitResult;
@@ -136,75 +132,99 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
             QueryParams.AddIgnoredActor(OwnerCharacter);
             QueryParams.AddIgnoredActor(FishingHook);
 
-            bool bHit = GetWorld()->LineTraceSingleByChannel(
-                HitResult, TraceStart, TraceEnd,
-                ECC_Visibility, QueryParams
-            );
-
-            FVector HookLocation = bHit
-                ? HitResult.ImpactPoint
-                : OwnerCharacter->GetActorLocation() + ForwardDirection * 500.f;
-
-            FishingHook->SetActorLocation(HookLocation);
-
-            DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Blue, false, 2.f);
-            DrawDebugSphere(GetWorld(), HookLocation, 10.f, 8, FColor::Red, false, 2.f);
+            bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
+            FVector HookLocation = bHit ? HitResult.ImpactPoint : TraceStart + (FVector::DownVector * 500.f);
             
-            GetWorldTimerManager().SetTimer(
-                RodTimerHandle,
-                this,
-                &AFishingRod::ShowHook,
-                1.5f,
-                false
-            );
+            FishingHook->SetActorLocation(HookLocation);
+            GetWorldTimerManager().SetTimer(RodTimerHandle, this, &AFishingRod::ShowHook, 1.5f, false);
         }
         break;
 
     case EFishingRodState::Attente:
-        if (SplashSound)
-        {
-            UGameplayStatics::PlaySoundAtLocation(this, SplashSound, FishingHook->GetActorLocation());
-        }
+        if (FishingHook && SplashSound) UGameplayStatics::PlaySoundAtLocation(this, SplashSound, FishingHook->GetActorLocation());
         StartWaitingForBite();
         break;
+
     case EFishingRodState::Morsure:
-        if (FishBiteSound)
-        {
-            UGameplayStatics::PlaySoundAtLocation(this, FishBiteSound, FishingHook->GetActorLocation());
-        }
+        if (FishingHook && FishBiteSound) UGameplayStatics::PlaySoundAtLocation(this, FishBiteSound, FishingHook->GetActorLocation());
         break;
+
     case EFishingRodState::Tirer:
         if (FishingLine) FishingLine->SetVisibility(true);
         if (FishingHook) FishingHook->SetActorHiddenInGame(false);
-        break;
-
-    default:
         break;
     }
 }
 
 void AFishingRod::ShowHook()
 {
-    FishingHook->SetActorHiddenInGame(false);
+    if (FishingHook) FishingHook->SetActorHiddenInGame(false);
     SetState(EFishingRodState::Attente);
 }
 
 void AFishingRod::StartWaitingForBite()
 {
     float RandomDelay = FMath::RandRange(5.0f, 10.0f);
-    UE_LOG(LogFishyCollector, Display, TEXT("En attente d'une morsure... (%.1f secondes)"), RandomDelay);
-
-    GetWorldTimerManager().SetTimer(
-        FishBiteTimerHandle,
-        this,
-        &AFishingRod::TriggerFishBite,
-        RandomDelay,
-        false
-    );
+    GetWorldTimerManager().SetTimer(FishBiteTimerHandle, this, &AFishingRod::TriggerFishBite, RandomDelay, false);
 }
 
 void AFishingRod::TriggerFishBite()
 {
-    UE_LOG(LogFishyCollector, Display, TEXT("Un poisson a mordu !"));
     SetState(EFishingRodState::Morsure);
+
+    if (FishingWidgetClass && !FishingWidgetInstance)
+    {
+        APlayerController* PC = GetWorld()->GetFirstPlayerController();
+        if (PC)
+        {
+            FishingWidgetInstance = CreateWidget<UUserWidget>(PC, FishingWidgetClass);
+            if (FishingWidgetInstance)
+            {
+                FProperty* Prop = FishingWidgetInstance->GetClass()->FindPropertyByName(FName("ParentRod"));
+                if (FObjectProperty* ObjProp = CastField<FObjectProperty>(Prop))
+                {
+                    ObjProp->SetObjectPropertyValue(ObjProp->ContainerPtrToValuePtr<void>(FishingWidgetInstance), this);
+                }
+
+                FishingWidgetInstance->AddToViewport();
+            }
+        }
+    }
+}
+
+void AFishingRod::EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish)
+{
+    if (FishingWidgetInstance)
+    {
+        FishingWidgetInstance->RemoveFromParent();
+        FishingWidgetInstance = nullptr;
+    }
+
+    if (bSuccess && CaughtFish)
+    {
+        CurrentFishBiting = CaughtFish;
+        SetState(EFishingRodState::Tirer);
+        if (FishNotifyWidgetClass)
+        {
+            APlayerController* PC = GetWorld()->GetFirstPlayerController();
+            UUserWidget* NotifyWidget = CreateWidget<UUserWidget>(PC, FishNotifyWidgetClass);
+            if (NotifyWidget)
+            {
+                FProperty* Prop = NotifyWidget->GetClass()->FindPropertyByName(FName("FishData"));
+                if (FObjectProperty* ObjProp = CastField<FObjectProperty>(Prop))
+                {
+                    ObjProp->SetObjectPropertyValue(ObjProp->ContainerPtrToValuePtr<void>(NotifyWidget), CaughtFish);
+                }
+
+                NotifyWidget->AddToViewport();
+                
+                UFunction* PlayAnimFunc = NotifyWidget->FindFunction(FName("PlaySwingIn")); 
+                if (PlayAnimFunc) NotifyWidget->ProcessEvent(PlayAnimFunc, nullptr);
+            }
+        }
+    }
+    else
+    {
+        SetState(EFishingRodState::Repos);
+    }
 }

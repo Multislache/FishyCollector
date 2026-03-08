@@ -19,6 +19,7 @@ enum class EFishingRodState : uint8
 
 class AFishingHook;
 class ACharacter;
+class UPoissonTemplate;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFishBite);
 
@@ -54,6 +55,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Fishing")
 	ACharacter* OwnerCharacter;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Fishing")
+	UPoissonTemplate* CurrentFishBiting;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> FishingWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	UUserWidget* FishingWidgetInstance;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> FishNotifyWidgetClass;
+	
 public:
 	UFUNCTION(BlueprintCallable, Category="Fishing")
 	void AttachToCharacter(ACharacter* Character, FName SocketName = "hand_r");
@@ -83,6 +96,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FishBiteSound;
 
+	UFUNCTION(BlueprintCallable, Category = "Fishing")
+	void EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish);
 	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;
