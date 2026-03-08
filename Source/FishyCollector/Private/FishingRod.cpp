@@ -118,7 +118,6 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
             {
                 UGameplayStatics::PlaySoundAtLocation(this, RodSound, GetActorLocation());
             }
-            FishingHook->SetActorHiddenInGame(false);
 
             // On utilise la direction passée en paramètre
             FVector ForwardDirection = LaunchDirection.IsNearlyZero()
@@ -150,6 +149,14 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
 
             DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Blue, false, 2.f);
             DrawDebugSphere(GetWorld(), HookLocation, 10.f, 8, FColor::Red, false, 2.f);
+            
+            GetWorldTimerManager().SetTimer(
+                RodTimerHandle,
+                this,
+                &AFishingRod::ShowHook,
+                1.5f,
+                false
+            );
         }
         break;
 
@@ -176,9 +183,15 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
     }
 }
 
+void AFishingRod::ShowHook()
+{
+    FishingHook->SetActorHiddenInGame(false);
+    SetState(EFishingRodState::Attente);
+}
+
 void AFishingRod::StartWaitingForBite()
 {
-    float RandomDelay = FMath::RandRange(5.0f, 15.0f);
+    float RandomDelay = FMath::RandRange(5.0f, 10.0f);
     UE_LOG(LogFishyCollector, Display, TEXT("En attente d'une morsure... (%.1f secondes)"), RandomDelay);
 
     GetWorldTimerManager().SetTimer(

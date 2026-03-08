@@ -19,3 +19,4 @@ AFishingHook::AFishingHook()
 	HookMesh->SetupAttachment(RootComponent);
 	HookMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
+

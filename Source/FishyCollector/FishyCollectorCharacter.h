@@ -88,10 +88,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category="Fishing")
 	void DoThrowLine();
 
-	void WaitFishBite();
-	
-	void FishBite();
-
 	FTimerHandle FishBiteTimerHandle;
 
 public:

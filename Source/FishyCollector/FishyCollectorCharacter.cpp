@@ -174,7 +174,6 @@ void AFishyCollectorCharacter::DoThrowLine_Implementation()
 
 		UE_LOG(LogFishyCollector, Display, TEXT("Lancer l'hameçon !"));
 		FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
-		WaitFishBite();
 		
 	}
 	else
@@ -187,28 +186,6 @@ void AFishyCollectorCharacter::DoThrowLine_Implementation()
 void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)
 {
 	bIsInFishingZone = bActive;
-}
-
-void AFishyCollectorCharacter::WaitFishBite()
-{
-	float RandomDelay = FMath::RandRange(5.0f, 15.0f);
-	UE_LOG(LogFishyCollector, Display, TEXT("En attente d'une morsure... (%.1f secondes)"), RandomDelay);
-	GetWorldTimerManager().SetTimer(
-		FishBiteTimerHandle,      
-		this,             
-		&AFishyCollectorCharacter::FishBite,  
-		RandomDelay,             
-		false             
-	);
-}
-
-void AFishyCollectorCharacter::FishBite()
-{
-	UE_LOG(LogFishyCollector, Display, TEXT("Un poisson a mordu à l'hameçon !"));
-	if (FishingRod)
-	{
-		FishingRod->SetState(EFishingRodState::Morsure);
-	}
 }
 
 

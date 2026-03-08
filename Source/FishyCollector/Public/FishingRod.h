@@ -82,12 +82,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FishBiteSound;
+
 	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;
 	
 	FTimerHandle FishBiteTimerHandle;
+	FTimerHandle RodTimerHandle;
 	
 	void StartWaitingForBite();
 	void TriggerFishBite();
+	void ShowHook();
 };
