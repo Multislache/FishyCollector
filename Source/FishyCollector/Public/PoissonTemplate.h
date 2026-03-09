@@ -31,4 +31,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
 	UTexture2D* Icone;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson", meta = (MultiLine = "true"))
+	FText Description;
 };

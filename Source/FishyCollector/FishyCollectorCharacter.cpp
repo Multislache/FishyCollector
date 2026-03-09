@@ -206,6 +206,8 @@ void AFishyCollectorCharacter::TogglePokedex()
 		PokedexWidget->RemoveFromParent();
 		PC->SetInputMode(FInputModeGameOnly());
 		PC->SetShowMouseCursor(false);
+		PC->ResetIgnoreMoveInput();
+		PC->ResetIgnoreLookInput();
 	}
 	else
 	{
@@ -227,6 +229,8 @@ void AFishyCollectorCharacter::TogglePokedex()
 			InputMode.SetWidgetToFocus(PokedexWidget->TakeWidget());
 			PC->SetInputMode(InputMode);
 			PC->SetShowMouseCursor(true);
+			PC->SetIgnoreMoveInput(true);
+			PC->SetIgnoreLookInput(true);
 		}
 	}
 }
