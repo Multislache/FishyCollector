@@ -56,6 +56,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pokedex")
 	int32 GetNombreTotal() const;
 
+	// Remet à zéro tous les poissons pêchés
+	UFUNCTION(BlueprintCallable, Category = "Pokedex")
+	void ResetPokedex();
+
 private:
 	UPROPERTY()
 	UPokedexRegistre* RegistreActuel = nullptr;

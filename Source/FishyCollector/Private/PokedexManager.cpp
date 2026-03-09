@@ -97,3 +97,13 @@ int32 UPokedexManager::GetNombreTotal() const
 {
 	return RegistreActuel ? RegistreActuel->TousLesPoissons.Num() : 0;
 }
+
+void UPokedexManager::ResetPokedex()
+{
+	if (!SaveGame) return;
+
+	SaveGame->PoissonsPeches.Empty();
+	Sauvegarder();
+
+	UE_LOG(LogFishyCollector, Display, TEXT("PokedexManager: Reset — tous les poissons remis à non-pêchés"));
+}

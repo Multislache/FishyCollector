@@ -53,6 +53,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PokedexAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ResetPokedexAction;
+
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
 
@@ -108,5 +111,6 @@ public:
 private:
 	void ThrowLine();
 	void TogglePokedex();
+	void ResetPokedex();
 };
 

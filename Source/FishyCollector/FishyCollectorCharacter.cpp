@@ -15,6 +15,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
+#include "Public/PokedexManager.h"
 
 
 void AFishyCollectorCharacter::BeginPlay()
@@ -95,6 +96,11 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		if (PokedexAction)
 		{
 			EnhancedInputComponent->BindAction(PokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::TogglePokedex);
+		}
+
+		if (ResetPokedexAction)
+		{
+			EnhancedInputComponent->BindAction(ResetPokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ResetPokedex);
 		}
 	}
 	else
@@ -194,6 +200,18 @@ void AFishyCollectorCharacter::DoThrowLine_Implementation()
 void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)
 {
 	bIsInFishingZone = bActive;
+}
+
+void AFishyCollectorCharacter::ResetPokedex()
+{
+	UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
+
+	UPokedexManager* Manager = GI->GetSubsystem<UPokedexManager>();
+	if (Manager)
+	{
+		Manager->ResetPokedex();
+	}
 }
 
 void AFishyCollectorCharacter::TogglePokedex()
