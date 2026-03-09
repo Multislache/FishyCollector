@@ -11,6 +11,7 @@
 #include "FishyCollectorGameMode.h"
 #include "Blueprint/UserWidget.h"
 #include "PokedexManager.h"
+#include "FishInventorySubsystem.h"
 
 AFishingRod::AFishingRod()
 {
@@ -203,6 +204,14 @@ void AFishingRod::EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish)
 
     if (bSuccess && CaughtFish)
     {
+        UFishInventorySubsystem* Inventory =
+            GetWorld()->GetGameInstance()->GetSubsystem<UFishInventorySubsystem>();
+
+        if (Inventory)
+        {
+            Inventory->AddFish(CaughtFish);
+        }
+
         CurrentFishBiting = CaughtFish;
 
         UPokedexManager* Manager = UPokedexManager::GetInstance(GetWorld()->GetGameInstance());
