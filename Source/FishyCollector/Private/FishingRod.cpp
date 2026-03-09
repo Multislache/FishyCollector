@@ -10,6 +10,7 @@
 #include "FishyCollector.h"
 #include "FishyCollectorGameMode.h"
 #include "Blueprint/UserWidget.h"
+#include "PokedexManager.h"
 
 AFishingRod::AFishingRod()
 {
@@ -203,6 +204,13 @@ void AFishingRod::EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish)
     if (bSuccess && CaughtFish)
     {
         CurrentFishBiting = CaughtFish;
+
+        UPokedexManager* Manager = UPokedexManager::GetInstance(GetWorld()->GetGameInstance());
+        if (Manager)
+        {
+            Manager->MarquerCommePeche(CaughtFish);
+        }
+
         SetState(EFishingRodState::Tirer);
         if (FishNotifyWidgetClass)
         {
