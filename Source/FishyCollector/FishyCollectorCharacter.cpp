@@ -11,6 +11,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "FishingRod.h"
 #include "InputActionValue.h"
+#include "PokedexWidget.h"
+#include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
 
 
@@ -87,6 +90,11 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		if (ThrowLineAction)
 		{
 			EnhancedInputComponent->BindAction(ThrowLineAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ThrowLine);
+		}
+
+		if (PokedexAction)
+		{
+			EnhancedInputComponent->BindAction(PokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::TogglePokedex);
 		}
 	}
 	else
@@ -186,6 +194,41 @@ void AFishyCollectorCharacter::DoThrowLine_Implementation()
 void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)
 {
 	bIsInFishingZone = bActive;
+}
+
+void AFishyCollectorCharacter::TogglePokedex()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	if (PokedexWidget && PokedexWidget->IsInViewport())
+	{
+		PokedexWidget->RemoveFromParent();
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->SetShowMouseCursor(false);
+	}
+	else
+	{
+		if (!PokedexWidgetClass) return;
+
+		if (!PokedexWidget)
+		{
+			PokedexWidget = CreateWidget<UPokedexWidget>(PC, PokedexWidgetClass);
+		}
+		else
+		{
+			PokedexWidget->Rafraichir();
+		}
+
+		if (PokedexWidget)
+		{
+			PokedexWidget->AddToViewport();
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(PokedexWidget->TakeWidget());
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(true);
+		}
+	}
 }
 
 

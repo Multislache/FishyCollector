@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class AFishingRod;
+class UPokedexWidget;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -48,6 +49,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* ThrowLineAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PokedexAction;
+
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
+
+	UPROPERTY()
+	UPokedexWidget* PokedexWidget;
 
 public:
 	AFishyCollectorCharacter();	
@@ -97,5 +107,6 @@ public:
 
 private:
 	void ThrowLine();
+	void TogglePokedex();
 };
 
