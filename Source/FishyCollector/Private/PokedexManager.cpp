@@ -32,15 +32,25 @@ void UPokedexManager::InitialiserRegistre(UPokedexRegistre* Registre)
 
 void UPokedexManager::ChargerSauvegarde()
 {
-	if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
-	{
-		SaveGame = Cast<UPokedexSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0));
-	}
+    if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
+    {
+        USaveGame* RawSave = UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0);
+        if (RawSave)
+        {
+            SaveGame = Cast<UPokedexSaveGame>(RawSave);
+            if (!SaveGame)
+            {
+                UE_LOG(LogFishyCollector, Warning, TEXT("PokedexManager: Sauvegarde incompatible, reset."));
+                UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
+            }
+        }
+    }
 
-	if (!SaveGame)
-	{
-		SaveGame = Cast<UPokedexSaveGame>(UGameplayStatics::CreateSaveGameObject(UPokedexSaveGame::StaticClass()));
-	}
+    if (!SaveGame)
+    {
+        SaveGame = Cast<UPokedexSaveGame>(
+            UGameplayStatics::CreateSaveGameObject(UPokedexSaveGame::StaticClass()));
+    }
 }
 
 void UPokedexManager::Sauvegarder()

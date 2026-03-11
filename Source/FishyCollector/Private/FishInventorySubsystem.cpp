@@ -1,28 +1,115 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "FishInventorySubsystem.h"
+#include "PoissonTemplate.h"
+#include "FishySaveGame.h"
+#include "Kismet/GameplayStatics.h"
+
+const FString UFishInventorySubsystem::SaveSlotName = TEXT("FishyInventorySave");
+
+void UFishInventorySubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    Super::Initialize(Collection);
+    LoadInventory(); 
+}
 
 void UFishInventorySubsystem::AddFish(UPoissonTemplate* Fish)
 {
     if (!Fish) return;
+
     for (FFishInventoryItem& Item : Inventory)
     {
         if (Item.Fish == Fish)
         {
             Item.Quantity++;
-            OnInventoryUpdated.Broadcast(); 
+            OnInventoryUpdated.Broadcast();
+            SaveInventory(); 
             return;
         }
     }
+
     FFishInventoryItem NewItem;
     NewItem.Fish = Fish;
     NewItem.Quantity = 1;
     Inventory.Add(NewItem);
     OnInventoryUpdated.Broadcast();
+    SaveInventory(); 
 }
 
 const TArray<FFishInventoryItem>& UFishInventorySubsystem::GetInventory() const
 {
     return Inventory;
+}
+
+void UFishInventorySubsystem::SaveInventory()
+{
+    UFishySaveGame* SaveGame = Cast<UFishySaveGame>(
+        UGameplayStatics::CreateSaveGameObject(UFishySaveGame::StaticClass()));
+
+    if (!SaveGame) return;
+
+    for (const FFishInventoryItem& Item : Inventory)
+    {
+        if (!Item.Fish) continue;
+
+        FFishSaveEntry Entry;
+        Entry.FishAssetPath = FSoftObjectPath(Item.Fish); 
+        Entry.Quantity = Item.Quantity;
+        SaveGame->SavedInventory.Add(Entry);
+    }
+
+    UGameplayStatics::SaveGameToSlot(SaveGame, SaveSlotName, 0);
+    UE_LOG(LogTemp, Display, TEXT("FishInventory: Sauvegarde OK (%d types de poissons)"), Inventory.Num());
+}
+
+void UFishInventorySubsystem::LoadInventory()
+{
+    if (!UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0)) return;
+
+    USaveGame* RawSave = UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0);
+    if (!RawSave) return;
+
+    // Cast sécurisé — si le fichier est d'une ancienne version, on l'ignore
+    UFishySaveGame* SaveGame = Cast<UFishySaveGame>(RawSave);
+    if (!SaveGame)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("FishInventory: Sauvegarde incompatible, reset."));
+        UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
+        return;
+    }
+
+    if (SaveGame->SavedInventory.IsEmpty()) return;
+
+    TArray<FSoftObjectPath> PathsToLoad;
+    TArray<int32> Quantities;
+
+    for (const FFishSaveEntry& Entry : SaveGame->SavedInventory)
+    {
+        PathsToLoad.Add(Entry.FishAssetPath);
+        Quantities.Add(Entry.Quantity);
+    }
+
+    FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+    Streamable.RequestAsyncLoad(PathsToLoad,
+        FStreamableDelegate::CreateUObject(this, &UFishInventorySubsystem::OnAssetsLoaded, PathsToLoad, Quantities)
+    );
+}
+
+void UFishInventorySubsystem::OnAssetsLoaded(TArray<FSoftObjectPath> Paths, TArray<int32> Quantities)
+{
+    Inventory.Empty();
+
+    for (int32 i = 0; i < Paths.Num(); i++)
+    {
+        UPoissonTemplate* Fish = Cast<UPoissonTemplate>(Paths[i].ResolveObject());
+        if (!Fish) continue;
+
+        FFishInventoryItem Item;
+        Item.Fish = Fish;
+        Item.Quantity = Quantities[i];
+        Inventory.Add(Item);
+    }
+
+    OnInventoryUpdated.Broadcast();
+    UE_LOG(LogTemp, Display, TEXT("FishInventory: Chargement async OK (%d poissons)"), Inventory.Num());
 }

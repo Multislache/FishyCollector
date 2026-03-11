@@ -13,6 +13,6 @@ class FISHYCOLLECTOR_API UPokedexSaveGame : public USaveGame
 
 public:
 	// Noms des assets UPoissonTemplate déjà pêchés
-	UPROPERTY()
+	UPROPERTY(SaveGame)
 	TSet<FName> PoissonsPeches;
 };
