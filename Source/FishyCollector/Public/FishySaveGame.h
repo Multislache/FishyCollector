@@ -18,7 +18,7 @@ struct FFishSaveEntry
     int32 Quantity = 0;
 
     UPROPERTY(SaveGame)
-    TArray<FFishCatchRecord> Captures; 
+    FFishCatchRecord Capture;
 };
 
 UCLASS()
