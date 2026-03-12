@@ -11,12 +11,14 @@ struct FFishSaveEntry
 {
     GENERATED_BODY()
 
-    // Chemin vers l'asset PoissonTemplate (ex: "/Game/Fish/BP_Truite")
     UPROPERTY(SaveGame)
     FSoftObjectPath FishAssetPath;
 
     UPROPERTY(SaveGame)
     int32 Quantity = 0;
+
+    UPROPERTY(SaveGame)
+    TArray<FFishCatchRecord> Captures; 
 };
 
 UCLASS()

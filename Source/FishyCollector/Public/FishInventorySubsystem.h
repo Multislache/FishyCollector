@@ -39,5 +39,5 @@ private:
 
     static const FString SaveSlotName;
 
-    void OnAssetsLoaded(TArray<FSoftObjectPath> Paths, TArray<int32> Quantities);
+    void OnAssetsLoaded(TArray<FSoftObjectPath> Paths, TArray<int32> Quantities, TArray<TArray<FFishCatchRecord>> SavedCaptures);
 };

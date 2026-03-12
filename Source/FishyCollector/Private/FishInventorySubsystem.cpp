@@ -10,20 +10,25 @@ const FString UFishInventorySubsystem::SaveSlotName = TEXT("FishyInventorySave")
 void UFishInventorySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
-    LoadInventory(); 
+    LoadInventory();
 }
 
 void UFishInventorySubsystem::AddFish(UPoissonTemplate* Fish)
 {
     if (!Fish) return;
 
+    FFishCatchRecord Record;
+    Record.Poids = FMath::RandRange(Fish->PoidsMin, Fish->PoidsMax);
+    Record.Taille = FMath::RandRange(Fish->TailleMin, Fish->TailleMax);
+
     for (FFishInventoryItem& Item : Inventory)
     {
         if (Item.Fish == Fish)
         {
             Item.Quantity++;
+            Item.Captures.Add(Record);
             OnInventoryUpdated.Broadcast();
-            SaveInventory(); 
+            SaveInventory();
             return;
         }
     }
@@ -31,9 +36,10 @@ void UFishInventorySubsystem::AddFish(UPoissonTemplate* Fish)
     FFishInventoryItem NewItem;
     NewItem.Fish = Fish;
     NewItem.Quantity = 1;
+    NewItem.Captures.Add(Record);
     Inventory.Add(NewItem);
     OnInventoryUpdated.Broadcast();
-    SaveInventory(); 
+    SaveInventory();
 }
 
 const TArray<FFishInventoryItem>& UFishInventorySubsystem::GetInventory() const
@@ -53,8 +59,9 @@ void UFishInventorySubsystem::SaveInventory()
         if (!Item.Fish) continue;
 
         FFishSaveEntry Entry;
-        Entry.FishAssetPath = FSoftObjectPath(Item.Fish); 
+        Entry.FishAssetPath = FSoftObjectPath(Item.Fish);
         Entry.Quantity = Item.Quantity;
+        Entry.Captures = Item.Captures;
         SaveGame->SavedInventory.Add(Entry);
     }
 
@@ -69,7 +76,6 @@ void UFishInventorySubsystem::LoadInventory()
     USaveGame* RawSave = UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0);
     if (!RawSave) return;
 
-    // Cast sécurisé — si le fichier est d'une ancienne version, on l'ignore
     UFishySaveGame* SaveGame = Cast<UFishySaveGame>(RawSave);
     if (!SaveGame)
     {
@@ -80,22 +86,29 @@ void UFishInventorySubsystem::LoadInventory()
 
     if (SaveGame->SavedInventory.IsEmpty()) return;
 
-    TArray<FSoftObjectPath> PathsToLoad;
-    TArray<int32> Quantities;
+    TArray<FSoftObjectPath>           PathsToLoad;
+    TArray<int32>                     Quantities;
+    TArray<TArray<FFishCatchRecord>>  SavedCaptures;
 
     for (const FFishSaveEntry& Entry : SaveGame->SavedInventory)
     {
         PathsToLoad.Add(Entry.FishAssetPath);
         Quantities.Add(Entry.Quantity);
+        SavedCaptures.Add(Entry.Captures);
     }
 
     FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
     Streamable.RequestAsyncLoad(PathsToLoad,
-        FStreamableDelegate::CreateUObject(this, &UFishInventorySubsystem::OnAssetsLoaded, PathsToLoad, Quantities)
+        FStreamableDelegate::CreateUObject(this,
+            &UFishInventorySubsystem::OnAssetsLoaded,
+            PathsToLoad, Quantities, SavedCaptures)
     );
 }
 
-void UFishInventorySubsystem::OnAssetsLoaded(TArray<FSoftObjectPath> Paths, TArray<int32> Quantities)
+void UFishInventorySubsystem::OnAssetsLoaded(
+    TArray<FSoftObjectPath>          Paths,
+    TArray<int32>                    Quantities,
+    TArray<TArray<FFishCatchRecord>> SavedCaptures)
 {
     Inventory.Empty();
 
@@ -107,6 +120,7 @@ void UFishInventorySubsystem::OnAssetsLoaded(TArray<FSoftObjectPath> Paths, TArr
         FFishInventoryItem Item;
         Item.Fish = Fish;
         Item.Quantity = Quantities[i];
+        Item.Captures = SavedCaptures[i];
         Inventory.Add(Item);
     }
 

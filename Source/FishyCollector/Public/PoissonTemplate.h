@@ -34,4 +34,16 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson", meta = (MultiLine = "true"))
 	FText Description;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson|Stats")
+	float PoidsMin = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson|Stats")
+	float PoidsMax = 5.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson|Stats")
+	float TailleMin = 10.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson|Stats")
+	float TailleMax = 60.f;
 };
