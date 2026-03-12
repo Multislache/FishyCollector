@@ -53,6 +53,6 @@ public:
     UFUNCTION(BlueprintPure, Category = "Inventaire")
     static FText GetCaptureTexte(const FFishCatchRecord& Record)
     {
-        return FText::FromString(FString::Printf(TEXT("%.1f kg — %.1f cm"), Record.Poids, Record.Taille));
+        return FText::FromString(FString::Printf(TEXT("%.1f kg et %.1f cm"), Record.Poids, Record.Taille));
     }
 };
