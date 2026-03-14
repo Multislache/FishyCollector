@@ -167,7 +167,7 @@ void AFishyCollectorCharacter::DoJumpEnd()
 }
 
 void AFishyCollectorCharacter::Interact()
-{
+{   
 	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
 	{
 		UE_LOG(LogFishyCollector, Warning, TEXT("Interaction QTE via touche E"));
