@@ -56,6 +56,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* ResetPokedexAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ShopAction;
+
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
 
