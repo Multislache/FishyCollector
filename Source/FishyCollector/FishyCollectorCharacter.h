@@ -48,7 +48,7 @@ protected:
 	UInputAction* MouseLookAction;
 
 	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* ThrowLineAction;
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PokedexAction;
@@ -112,7 +112,7 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 private:
-	void ThrowLine();
+	void Interact();
 	void TogglePokedex();
 	void ResetPokedex();
 };

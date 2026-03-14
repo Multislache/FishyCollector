@@ -88,9 +88,9 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
 
-		if (ThrowLineAction)
+		if (InteractAction)
 		{
-			EnhancedInputComponent->BindAction(ThrowLineAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ThrowLine);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::Interact);
 		}
 
 		if (PokedexAction)
@@ -166,11 +166,19 @@ void AFishyCollectorCharacter::DoJumpEnd()
 	StopJumping();
 }
 
-void AFishyCollectorCharacter::ThrowLine()
+void AFishyCollectorCharacter::Interact()
 {
-	if (!bIsInFishingZone) return;
-	UE_LOG(LogFishyCollector, Display, TEXT("Hamecon lancé!"));
-	DoThrowLine();
+	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
+	{
+		UE_LOG(LogFishyCollector, Warning, TEXT("Interaction QTE via touche E"));
+		FishingRod->HandleInput();
+		return; 
+	}
+	if (bIsInFishingZone && FishingRod)
+	{
+		UE_LOG(LogFishyCollector, Display, TEXT("Action de pêche (Lancer/Ramener) via touche E"));
+		DoThrowLine(); 
+	}
 }
 
 void AFishyCollectorCharacter::DoThrowLine_Implementation()

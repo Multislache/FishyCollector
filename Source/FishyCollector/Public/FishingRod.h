@@ -84,6 +84,9 @@ public:
 	void OnStateChanged(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection);
 	virtual void OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection);
 
+	UFUNCTION(BlueprintCallable, Category = "Fishing")
+	void HandleInput();
+
 	UPROPERTY(BlueprintAssignable)
 	FOnFishBite OnFishBite;
 

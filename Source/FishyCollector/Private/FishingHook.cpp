@@ -1,6 +1,7 @@
 ﻿#include "FishingHook.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 AFishingHook::AFishingHook()
@@ -18,5 +19,12 @@ AFishingHook::AFishingHook()
 	HookMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HookMesh"));
 	HookMesh->SetupAttachment(RootComponent);
 	HookMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	QTEWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("QTEWidgetComponent"));
+	QTEWidgetComponent->SetupAttachment(RootComponent);
+    
+	QTEWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	QTEWidgetComponent->SetDrawAtDesiredSize(true);
+	QTEWidgetComponent->SetVisibility(false);
 }
 

@@ -8,6 +8,7 @@
 #include "Components/SceneComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
+#include "Components/WidgetComponent.h"
 #include "FishyCollectorGameMode.h"
 #include "Blueprint/UserWidget.h"
 #include "PokedexManager.h"
@@ -104,12 +105,19 @@ bool AFishingRod::CanTransitionTo(EFishingRodState NewState) const
 
 void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection)
 {
-    if (NewState != EFishingRodState::Morsure && FishingWidgetInstance)
+    if (FishingHook && FishingHook->GetQTEWidgetComponent())
     {
-        FishingWidgetInstance->RemoveFromParent();
-        FishingWidgetInstance = nullptr;
+        if (NewState == EFishingRodState::Morsure)
+        {
+            // La visibilité est gérée dans TriggerFishBite, on peut la forcer ici au besoin
+        }
+        else
+        {
+            // On cache le widget pour tous les autres états
+            FishingHook->GetQTEWidgetComponent()->SetVisibility(false);
+            FishingWidgetInstance = nullptr;
+        }
     }
-
     switch (NewState)
     {
     case EFishingRodState::Repos:
@@ -174,34 +182,37 @@ void AFishingRod::TriggerFishBite()
 {
     SetState(EFishingRodState::Morsure);
 
-    if (FishingWidgetClass && !FishingWidgetInstance)
+    if (FishingWidgetClass && FishingHook)
     {
-        APlayerController* PC = GetWorld()->GetFirstPlayerController();
-        if (PC)
+        UWidgetComponent* HookWidgetComp = FishingHook->GetQTEWidgetComponent();
+        if (HookWidgetComp)
         {
-            FishingWidgetInstance = CreateWidget<UUserWidget>(PC, FishingWidgetClass);
-            if (FishingWidgetInstance)
+            HookWidgetComp->SetVisibility(true);
+
+            UUserWidget* NewWidget = HookWidgetComp->GetUserWidgetObject();
+            if (NewWidget)
             {
-                FProperty* Prop = FishingWidgetInstance->GetClass()->FindPropertyByName(FName("ParentRod"));
+                FishingWidgetInstance = NewWidget;
+
+                UFunction* ResetFunc = NewWidget->FindFunction(FName("ResetWidget"));
+                if (ResetFunc)
+                {
+                    NewWidget->ProcessEvent(ResetFunc, nullptr);
+                }
+                FProperty* Prop = NewWidget->GetClass()->FindPropertyByName(FName("ParentRod"));
                 if (FObjectProperty* ObjProp = CastField<FObjectProperty>(Prop))
                 {
-                    ObjProp->SetObjectPropertyValue(ObjProp->ContainerPtrToValuePtr<void>(FishingWidgetInstance), this);
+                    ObjProp->SetObjectPropertyValue(ObjProp->ContainerPtrToValuePtr<void>(NewWidget), this);
                 }
-
-                FishingWidgetInstance->AddToViewport();
             }
         }
     }
 }
 
+
 void AFishingRod::EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish)
 {
-    if (FishingWidgetInstance)
-    {
-        FishingWidgetInstance->RemoveFromParent();
-        FishingWidgetInstance = nullptr;
-    }
-
+    FishingWidgetInstance = nullptr;
     if (bSuccess && CaughtFish)
     {
         UFishInventorySubsystem* Inventory =
@@ -243,5 +254,17 @@ void AFishingRod::EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish)
     else
     {
         SetState(EFishingRodState::Repos);
+    }
+}
+
+void AFishingRod::HandleInput()
+{
+    if (CurrentState == EFishingRodState::Morsure && FishingWidgetInstance)
+    {
+        UFunction* Func = FishingWidgetInstance->FindFunction(FName("OnInputReceived"));
+        if (Func)
+        {
+            FishingWidgetInstance->ProcessEvent(Func, nullptr);
+        }
     }
 }

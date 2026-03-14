@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/WidgetComponent.h"
 #include "FishingHook.generated.h"
 
 UCLASS()
@@ -19,7 +20,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	class USphereComponent* HookCollision;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UWidgetComponent* QTEWidgetComponent;
+
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Fishing")
 	UStaticMeshComponent* GetHookMesh() const { return HookMesh; }
+
+	UWidgetComponent* GetQTEWidgetComponent() const { return QTEWidgetComponent; }
 };
