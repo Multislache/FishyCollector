@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Materials/MaterialInterface.h"
 #include "PoissonTemplate.generated.h"
 
 UENUM(BlueprintType)
@@ -28,6 +29,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
 	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
+	TSoftObjectPtr<UMaterialInterface> Materiau;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
 	UTexture2D* Icone;

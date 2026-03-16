@@ -7,11 +7,13 @@
 #include "PokedexManager.h"
 #include "PokedexWidget.generated.h"
 
-class UScrollBox;
+class UWrapBox;
 class UTextBlock;
 class UImage;
 class UButton;
 class UPokedexWidget;
+class APokedexViewerActor;
+class UMaterialInterface;
 
 UCLASS()
 class UPokedexBoutonHelper : public UObject
@@ -48,10 +50,14 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 	// Page Liste
 	UPROPERTY(meta = (BindWidget))
-	UScrollBox* ListePoissons;
+	UWrapBox* ListePoissons;
 
 	// Page Détail
 	UPROPERTY(meta = (BindWidget))
@@ -66,6 +72,19 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UButton* BoutonRetour;
 
+	// Matériau noir assigné dans le Blueprint pour les poissons non découverts
+	UPROPERTY(EditAnywhere, Category = "Pokedex")
+	UMaterialInterface* MateriauSilhouette;
+
 private:
 	void SetDetailVisible(bool bVisible);
+
+	UPROPERTY()
+	TArray<UPokedexBoutonHelper*> Helpers;
+
+	UPROPERTY()
+	APokedexViewerActor* ViewerActor = nullptr;
+
+	bool bDragging = false;
+
 };

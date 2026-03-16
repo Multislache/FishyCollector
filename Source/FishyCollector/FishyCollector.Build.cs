@@ -19,6 +19,7 @@ public class FishyCollector : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
+			"SlateCore",
 			"CableComponent"
 		});
 
