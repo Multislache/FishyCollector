@@ -12,6 +12,7 @@ class UCameraComponent;
 class UInputAction;
 class AFishingRod;
 class UPokedexWidget;
+class AFishingRodStorage;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -65,6 +66,9 @@ protected:
 	UPROPERTY()
 	UPokedexWidget* PokedexWidget;
 
+	UPROPERTY(BlueprintReadWrite, Category="Fishing")
+	AFishingRodStorage* NearbyStorage;
+
 public:
 	AFishyCollectorCharacter();	
 
@@ -106,7 +110,18 @@ public:
 
 	FTimerHandle FishBiteTimerHandle;
 
-public:
+	UFUNCTION(BlueprintCallable, Category="Fishing")
+	void SetNearbyStorage(AFishingRodStorage* Storage);
+
+	UFUNCTION(BlueprintCallable, Category="Fishing")
+	void EquipRod(TSubclassOf<AFishingRod> NewRodClass);
+
+	UFUNCTION(BlueprintCallable, Category="Fishing")
+	void UnequipRod();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Fishing")
+	TSubclassOf<AFishingRod> GetCurrentRodClass() const;
+	
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }

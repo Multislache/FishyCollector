@@ -101,6 +101,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Fishing")
 	void EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fishing")
+	FText RodDisplayName = FText::FromString("Canne à pêche");
 	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;

@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "FishingRod.h"
+#include "FishingRodStorage.h"
 #include "InputActionValue.h"
 #include "PokedexWidget.h"
 #include "Blueprint/UserWidget.h"
@@ -167,16 +168,19 @@ void AFishyCollectorCharacter::DoJumpEnd()
 }
 
 void AFishyCollectorCharacter::Interact()
-{   
+{
 	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
 	{
-		UE_LOG(LogFishyCollector, Warning, TEXT("Interaction QTE via touche E"));
 		FishingRod->HandleInput();
 		return; 
 	}
+	if (NearbyStorage)
+	{
+		NearbyStorage->OpenStorage(this);
+		return;
+	}
 	if (bIsInFishingZone && FishingRod)
 	{
-		UE_LOG(LogFishyCollector, Display, TEXT("Action de pêche (Lancer/Ramener) via touche E"));
 		DoThrowLine(); 
 	}
 }
@@ -193,14 +197,10 @@ void AFishyCollectorCharacter::DoThrowLine_Implementation()
 			FRotator YawOnly = FRotator(0.f, C->GetControlRotation().Yaw, 0.f);
 			LaunchDirection = FRotationMatrix(YawOnly).GetUnitAxis(EAxis::X);
 		}
-
-		UE_LOG(LogFishyCollector, Display, TEXT("Lancer l'hameçon !"));
 		FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
-		
 	}
 	else
 	{
-		UE_LOG(LogFishyCollector, Display, TEXT("Ramener l'hameçon !"));
 		FishingRod->SetState(EFishingRodState::Repos);
 	}
 }
@@ -261,4 +261,38 @@ void AFishyCollectorCharacter::TogglePokedex()
 	}
 }
 
+void AFishyCollectorCharacter::SetNearbyStorage(AFishingRodStorage* Storage)
+{
+	NearbyStorage = Storage;
+}
 
+void AFishyCollectorCharacter::EquipRod(TSubclassOf<AFishingRod> NewRodClass)
+{
+	if (!NewRodClass) return;
+
+	if (FishingRod)
+	{
+		FishingRod->DetachFromCharacter();
+		FishingRod->Destroy();
+		FishingRod = nullptr;
+	}
+	FishingRod = GetWorld()->SpawnActor<AFishingRod>(NewRodClass);
+	if (FishingRod)
+	{
+		FishingRod->AttachToCharacter(this);
+	}
+}
+
+void AFishyCollectorCharacter::UnequipRod()
+{
+	if (!FishingRod) return;
+	FishingRod->DetachFromCharacter();
+	FishingRod->Destroy();
+	FishingRod = nullptr;
+}
+
+TSubclassOf<AFishingRod> AFishyCollectorCharacter::GetCurrentRodClass() const
+{
+	if (!FishingRod) return nullptr;
+	return FishingRod->GetClass();
+}
