@@ -20,6 +20,9 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void AddFish(UPoissonTemplate* Fish);
+    
+    UFUNCTION(BlueprintCallable)
+    void RemoveFish(int index);
 
     UFUNCTION(BlueprintCallable)
     const TArray<FFishInventoryItem>& GetInventory() const;

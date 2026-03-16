@@ -20,6 +20,19 @@ void UFishInventorySubsystem::AddFish(UPoissonTemplate* Fish)
     FFishCatchRecord Record;
     Record.Poids = FMath::RandRange(Fish->PoidsMin, Fish->PoidsMax);
     Record.Taille = FMath::RandRange(Fish->TailleMin, Fish->TailleMax);
+    
+    if (Fish->Rarete == EPoissonRarete::Legendaire)
+    {
+        Record.Prix = round((Record.Poids) * 10.f + Record.Taille*0.3);
+    }
+    else if (Fish->Rarete == EPoissonRarete::Rare)
+    {
+        Record.Prix = round((Record.Poids) * 6.f + Record.Taille*0.3);
+    }
+    else
+    {
+        Record.Prix = round((Record.Poids) * 3.f + Record.Taille*0.3);
+    }
 
     for (FFishInventoryItem& Item : Inventory)
     {
@@ -42,6 +55,14 @@ void UFishInventorySubsystem::AddFish(UPoissonTemplate* Fish)
     OnInventoryUpdated.Broadcast();
     SaveInventory();
 }
+
+void UFishInventorySubsystem::RemoveFish(int index )
+{
+    Inventory.RemoveAt(index);
+    OnInventoryUpdated.Broadcast();
+    SaveInventory();
+}
+
 const TArray<FFishInventoryItem>& UFishInventorySubsystem::GetInventory() const
 {
     return Inventory;

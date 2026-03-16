@@ -183,6 +183,13 @@ void AFishyCollectorCharacter::Interact()
 	{
 		DoThrowLine(); 
 	}
+
+	if (bIsInShopZone)
+	{
+			
+		ToggleShop();
+		
+	}
 }
 
 void AFishyCollectorCharacter::DoThrowLine_Implementation()
@@ -210,6 +217,11 @@ void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)
 	bIsInFishingZone = bActive;
 }
 
+void AFishyCollectorCharacter::SetShopZoneActive(bool bActive)
+{
+	bIsInShopZone = bActive;
+}
+
 void AFishyCollectorCharacter::ResetPokedex()
 {
 	UGameInstance* GI = GetGameInstance();
@@ -221,6 +233,8 @@ void AFishyCollectorCharacter::ResetPokedex()
 		Manager->ResetPokedex();
 	}
 }
+
+
 
 void AFishyCollectorCharacter::TogglePokedex()
 {
@@ -253,6 +267,40 @@ void AFishyCollectorCharacter::TogglePokedex()
 			PokedexWidget->AddToViewport();
 			FInputModeGameAndUI InputMode;
 			InputMode.SetWidgetToFocus(PokedexWidget->TakeWidget());
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(true);
+			PC->SetIgnoreMoveInput(true);
+			PC->SetIgnoreLookInput(true);
+		}
+	}
+}
+
+void AFishyCollectorCharacter::ToggleShop()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+	if (!ShopWidgetClass) return;
+
+	if (ShopWidget && ShopWidget->IsInViewport())
+	{
+		ShopWidget->RemoveFromParent();
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->SetShowMouseCursor(false);
+		PC->ResetIgnoreMoveInput();
+		PC->ResetIgnoreLookInput();
+	}
+	else
+	{
+		if (!ShopWidget)
+		{
+			ShopWidget = CreateWidget<UUserWidget>(PC, ShopWidgetClass);
+		}
+
+		if (ShopWidget)
+		{
+			ShopWidget->AddToViewport();
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(ShopWidget->TakeWidget());
 			PC->SetInputMode(InputMode);
 			PC->SetShowMouseCursor(true);
 			PC->SetIgnoreMoveInput(true);

@@ -63,8 +63,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> ShopWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, Category="UI")
+	UUserWidget* ShopWidget;
+
 	UPROPERTY()
 	UPokedexWidget* PokedexWidget;
+	
 
 	UPROPERTY(BlueprintReadWrite, Category="Fishing")
 	AFishingRodStorage* NearbyStorage;
@@ -82,12 +89,17 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category="Fishing")
 	bool bIsInFishingZone = false;
 
+	UPROPERTY(BlueprintReadWrite, Category="Fishing")
+	bool bIsInShopZone = false;
+	
 	UPROPERTY(EditAnywhere, Category="Fishing")
 	TSubclassOf<AFishingRod> FishingRodClass;
 
 	UPROPERTY(BlueprintReadOnly, Category="Fishing")
 	AFishingRod* FishingRod;
 
+	UPROPERTY(BlueprintReadWrite, Category="Ressource")
+	float Money;
 	
 public:
 	UFUNCTION(BlueprintCallable, Category="Input")
@@ -105,6 +117,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Fishing")
 	void SetFishingZoneActive(bool bActive);
 
+	UFUNCTION(BlueprintCallable, Category="Fishing")
+	void SetShopZoneActive(bool bActive);
+	
 	UFUNCTION(BlueprintNativeEvent, Category="Fishing")
 	void DoThrowLine();
 
@@ -130,5 +145,7 @@ private:
 	void Interact();
 	void TogglePokedex();
 	void ResetPokedex();
+	
+	void ToggleShop();
 };
 

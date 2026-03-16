@@ -15,6 +15,9 @@ struct FFishCatchRecord
 
     UPROPERTY(BlueprintReadOnly)
     float Taille = 0.f;
+    
+    UPROPERTY(BlueprintReadOnly)
+    float Prix = 0.f;
 };
 
 USTRUCT(BlueprintType)
@@ -55,4 +58,12 @@ public:
     {
         return FText::FromString(FString::Printf(TEXT("%.1f kg et %.1f cm"), Record.Poids, Record.Taille));
     }
+
+    UFUNCTION(BlueprintPure, Category = "Inventaire")
+    static float GetPrix(const FFishCatchRecord& Record)
+    {
+        return  Record.Prix;
+    }
+
+    
 };
