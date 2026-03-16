@@ -7,7 +7,7 @@
 #include "PokedexManager.h"
 #include "PokedexWidget.generated.h"
 
-class UWrapBox;
+class UUniformGridPanel;
 class UTextBlock;
 class UImage;
 class UButton;
@@ -57,7 +57,10 @@ protected:
 
 	// Page Liste
 	UPROPERTY(meta = (BindWidget))
-	UWrapBox* ListePoissons;
+	class UScrollBox* ScrollListe;
+
+	UPROPERTY(meta = (BindWidget))
+	UUniformGridPanel* ListePoissons;
 
 	// Page Détail
 	UPROPERTY(meta = (BindWidget))

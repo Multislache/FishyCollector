@@ -5,7 +5,9 @@
 #include "PoissonTemplate.h"
 #include "PokedexViewerActor.h"
 #include "Blueprint/WidgetTree.h"
-#include "Components/WrapBox.h"
+#include "Components/UniformGridPanel.h"
+#include "Components/UniformGridSlot.h"
+#include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
@@ -78,9 +80,16 @@ void UPokedexWidget::Rafraichir()
 		// Taille fixe via SizeBox
 		USizeBox* SizeBox = WidgetTree->ConstructWidget<USizeBox>();
 		SizeBox->SetWidthOverride(100.f);
-		SizeBox->SetHeightOverride(100.f);
+		SizeBox->SetHeightOverride(140.f);
 		SizeBox->AddChild(Btn);
-		ListePoissons->AddChild(SizeBox);
+
+		int32 Position = Index - 2; // Index a déjà été incrémenté
+		UUniformGridSlot* GridSlot = Cast<UUniformGridSlot>(ListePoissons->AddChildToUniformGrid(SizeBox, Position / 4, Position % 4));
+		if (GridSlot)
+		{
+			GridSlot->SetHorizontalAlignment(HAlign_Fill);
+			GridSlot->SetVerticalAlignment(VAlign_Fill);
+		}
 	}
 
 	RetourListe();
@@ -190,5 +199,5 @@ void UPokedexWidget::SetDetailVisible(bool bVisible)
 	if (NomPoisson)          NomPoisson->SetVisibility(DetailVis);
 	if (DescriptionPoisson)  DescriptionPoisson->SetVisibility(DetailVis);
 	if (BoutonRetour)        BoutonRetour->SetVisibility(DetailVis);
-	if (ListePoissons)       ListePoissons->SetVisibility(ListeVis);
+	if (ScrollListe)         ScrollListe->SetVisibility(ListeVis);
 }
