@@ -7,8 +7,12 @@
 AFishingRodStorage::AFishingRodStorage()
 {
     PrimaryActorTick.bCanEverTick = false;
+
+    USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    RootComponent = Root;
+    
     ChestMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ChestMesh"));
-    RootComponent = ChestMesh;
+    ChestMesh->SetupAttachment(RootComponent);
 }
 
 void AFishingRodStorage::OpenStorage(AFishyCollectorCharacter* PlayerCharacter)
