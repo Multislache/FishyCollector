@@ -145,7 +145,8 @@ private:
 	void Interact();
 	void TogglePokedex();
 	void ResetPokedex();
-	
+
+	UFUNCTION(BlueprintCallable)
 	void ToggleShop();
 };
 
