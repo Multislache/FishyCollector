@@ -36,4 +36,7 @@ protected:
 
 	UPROPERTY()
 	AFishyCollectorCharacter* InteractingPlayer;
+
+	UPROPERTY(BlueprintReadWrite, Category="UI")
+	UUserWidget* InteractWidgetInstance;
 };

@@ -183,12 +183,9 @@ void AFishyCollectorCharacter::Interact()
 	{
 		DoThrowLine(); 
 	}
-
 	if (bIsInShopZone)
 	{
-			
 		ToggleShop();
-		
 	}
 }
 

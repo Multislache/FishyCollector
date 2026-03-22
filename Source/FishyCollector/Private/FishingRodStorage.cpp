@@ -40,6 +40,11 @@ void AFishingRodStorage::OpenStorage(AFishyCollectorCharacter* PlayerCharacter)
         Params.InCharacter = PlayerCharacter;
         StorageWidgetInstance->ProcessEvent(InitFunc, &Params);
     }
+    if (InteractWidgetInstance)
+    {
+        InteractWidgetInstance->RemoveFromParent();
+        InteractWidgetInstance = nullptr;
+    } 
     StorageWidgetInstance->AddToViewport();
 }
 

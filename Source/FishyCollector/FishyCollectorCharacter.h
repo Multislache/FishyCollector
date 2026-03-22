@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "FishingRodData.h"
 #include "Logging/LogMacros.h"
 #include "FishyCollectorCharacter.generated.h"
 
@@ -136,6 +137,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Fishing")
 	TSubclassOf<AFishingRod> GetCurrentRodClass() const;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")
+	TArray<UFishingRodData*> OwnedFishingRods;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")
+	UFishingRodData* EquippedFishingRod;
+	
 	
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
