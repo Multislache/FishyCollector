@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "PokedexManager.h"
+#include "PoissonTemplate.h"
 #include "PokedexWidget.generated.h"
 
 class UUniformGridPanel;
@@ -14,6 +15,15 @@ class UButton;
 class UPokedexWidget;
 class APokedexViewerActor;
 class UMaterialInterface;
+class UDataTable;
+
+UENUM(BlueprintType)
+enum class ETriPokedex : uint8
+{
+	Numero    UMETA(DisplayName = "Numéro"),
+	Rarete    UMETA(DisplayName = "Rareté"),
+	Lieu      UMETA(DisplayName = "Lieu"),
+};
 
 UCLASS()
 class UPokedexBoutonHelper : public UObject
@@ -26,6 +36,9 @@ public:
 
 	UPROPERTY()
 	UPokedexWidget* Widget = nullptr;
+
+	UPROPERTY()
+	UButton* Bouton = nullptr;
 
 	bool bPeche = false;
 
@@ -43,10 +56,14 @@ public:
 	void Rafraichir();
 
 	UFUNCTION(BlueprintCallable, Category = "Pokedex")
-	void AfficherDetail(UPoissonTemplate* Poisson, bool bPeche);
+	void AfficherDetail(UPoissonTemplate* Poisson, bool bPeche, UButton* BoutonSource = nullptr);
 
 	UFUNCTION(BlueprintCallable, Category = "Pokedex")
 	void RetourListe();
+
+	// DataTable des lieux assigné dans le Blueprint (pour le tri par lieu)
+	UPROPERTY(EditAnywhere, Category = "Pokedex")
+	UDataTable* TableLieux;
 
 protected:
 	virtual void NativeConstruct() override;
@@ -61,6 +78,16 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UUniformGridPanel* ListePoissons;
+
+	// Boutons de tri
+	UPROPERTY(meta = (BindWidget))
+	UButton* BoutonTriNumero;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* BoutonTriRarete;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* BoutonTriLieu;
 
 	// Page Détail
 	UPROPERTY(meta = (BindWidget))
@@ -80,13 +107,35 @@ protected:
 	UMaterialInterface* MateriauSilhouette;
 
 private:
+	UFUNCTION()
+	void TrierParNumero();
+
+	UFUNCTION()
+	void TrierParRarete();
+
+	UFUNCTION()
+	void TrierParLieu();
+
+	void RemplirGrille(const TArray<FPokedexEntry>& Entrees);
 	void SetDetailVisible(bool bVisible);
+	void SurlignerBouton(UButton* Bouton, bool bSurligne);
+	void MettreAJourBoutonsTri();
+	FName TrouverLieu(UPoissonTemplate* Poisson) const;
+
+	// Entrées dans l'ordre original (numéro)
+	UPROPERTY()
+	TArray<FPokedexEntry> EntreesOriginales;
 
 	UPROPERTY()
 	TArray<UPokedexBoutonHelper*> Helpers;
 
 	UPROPERTY()
 	APokedexViewerActor* ViewerActor = nullptr;
+
+	UPROPERTY()
+	UButton* BoutonActif = nullptr;
+
+	ETriPokedex TriActuel = ETriPokedex::Numero;
 
 	bool bDragging = false;
 

@@ -3,6 +3,7 @@
 #include "PokedexWidget.h"
 #include "PokedexManager.h"
 #include "PoissonTemplate.h"
+#include "LieuTemplate.h"
 #include "PokedexViewerActor.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/UniformGridPanel.h"
@@ -14,13 +15,14 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Components/SizeBox.h"
+#include "Engine/DataTable.h"
 #include "Engine/GameInstance.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Materials/MaterialInterface.h"
 
 void UPokedexBoutonHelper::OnClique()
 {
-	if (Widget) Widget->AfficherDetail(Poisson, bPeche);
+	if (Widget) Widget->AfficherDetail(Poisson, bPeche, Bouton);
 }
 
 void UPokedexWidget::NativeConstruct()
@@ -30,6 +32,15 @@ void UPokedexWidget::NativeConstruct()
 	if (BoutonRetour)
 		BoutonRetour->OnClicked.AddDynamic(this, &UPokedexWidget::RetourListe);
 
+	if (BoutonTriNumero)
+		BoutonTriNumero->OnClicked.AddDynamic(this, &UPokedexWidget::TrierParNumero);
+
+	if (BoutonTriRarete)
+		BoutonTriRarete->OnClicked.AddDynamic(this, &UPokedexWidget::TrierParRarete);
+
+	if (BoutonTriLieu)
+		BoutonTriLieu->OnClicked.AddDynamic(this, &UPokedexWidget::TrierParLieu);
+
 	Rafraichir();
 }
 
@@ -38,16 +49,95 @@ void UPokedexWidget::Rafraichir()
 	UPokedexManager* Manager = UPokedexManager::GetInstance(GetGameInstance());
 	if (!Manager || !ListePoissons) return;
 
-	ListePoissons->ClearChildren();
-	Helpers.Empty();
-
-	int32 Index = 1;
+	// Sauvegarder l'ordre original (numéro)
+	EntreesOriginales.Empty();
 	for (const FPokedexEntry& Entry : Manager->GetToutesLesEntrees())
 	{
-		if (!Entry.Poisson) continue;
+		if (Entry.Poisson)
+			EntreesOriginales.Add(Entry);
+	}
 
-		// Bouton carré
+	TriActuel = ETriPokedex::Numero;
+	RemplirGrille(EntreesOriginales);
+	MettreAJourBoutonsTri();
+	RetourListe();
+}
+
+// ─── Tris ────────────────────────────────────────────────────────────────────
+
+void UPokedexWidget::TrierParNumero()
+{
+	TriActuel = ETriPokedex::Numero;
+	RemplirGrille(EntreesOriginales);
+	MettreAJourBoutonsTri();
+}
+
+void UPokedexWidget::TrierParRarete()
+{
+	TriActuel = ETriPokedex::Rarete;
+
+	TArray<FPokedexEntry> Tries = EntreesOriginales;
+	Tries.Sort([](const FPokedexEntry& A, const FPokedexEntry& B)
+	{
+		return (uint8)A.Poisson->Rarete < (uint8)B.Poisson->Rarete;
+	});
+
+	RemplirGrille(Tries);
+	MettreAJourBoutonsTri();
+}
+
+void UPokedexWidget::TrierParLieu()
+{
+	TriActuel = ETriPokedex::Lieu;
+
+	TArray<FPokedexEntry> Tries = EntreesOriginales;
+	Tries.Sort([this](const FPokedexEntry& A, const FPokedexEntry& B)
+	{
+		return TrouverLieu(A.Poisson).LexicalLess(TrouverLieu(B.Poisson));
+	});
+
+	RemplirGrille(Tries);
+	MettreAJourBoutonsTri();
+}
+
+FName UPokedexWidget::TrouverLieu(UPoissonTemplate* Poisson) const
+{
+	if (!TableLieux || !Poisson) return NAME_None;
+
+	for (const FName& RowName : TableLieux->GetRowNames())
+	{
+		FLieuRow* Row = TableLieux->FindRow<FLieuRow>(RowName, TEXT(""));
+		if (Row && Row->Poissons.Contains(Poisson))
+			return RowName;
+	}
+	return NAME_None;
+}
+
+// ─── Remplissage de la grille ─────────────────────────────────────────────────
+
+static FLinearColor CouleurRarete(EPoissonRarete Rarete)
+{
+	switch (Rarete)
+	{
+	case EPoissonRarete::Rare:       return FLinearColor(0.55f, 0.75f, 1.0f);   // bleu clair
+	case EPoissonRarete::Legendaire: return FLinearColor(1.0f,  0.85f, 0.25f);  // or
+	default:                         return FLinearColor(0.88f, 0.88f, 0.88f);  // gris (Commun)
+	}
+}
+
+void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
+{
+	if (!ListePoissons) return;
+
+	ListePoissons->ClearChildren();
+	Helpers.Empty();
+	BoutonActif = nullptr;
+
+	int32 Index = 1;
+	for (const FPokedexEntry& Entry : Entrees)
+	{
 		UButton* Btn = WidgetTree->ConstructWidget<UButton>();
+		Btn->SetBackgroundColor(CouleurRarete(Entry.Poisson->Rarete));
 
 		// VerticalBox : image en haut, numéro en bas
 		UVerticalBox* VBox = WidgetTree->ConstructWidget<UVerticalBox>();
@@ -62,9 +152,11 @@ void UPokedexWidget::Rafraichir()
 		ImgSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		ImgSlot->SetHorizontalAlignment(HAlign_Fill);
 
-		// Numéro en dessous
+		// Numéro (position dans l'ordre original)
+		int32 NumeroOriginal = EntreesOriginales.IndexOfByPredicate(
+			[&](const FPokedexEntry& E){ return E.Poisson == Entry.Poisson; }) + 1;
 		UTextBlock* TxtId = WidgetTree->ConstructWidget<UTextBlock>();
-		TxtId->SetText(FText::FromString(FString::Printf(TEXT("#%03d"), Index++)));
+		TxtId->SetText(FText::FromString(FString::Printf(TEXT("#%03d"), NumeroOriginal)));
 		UVerticalBoxSlot* IdSlot = VBox->AddChildToVerticalBox(TxtId);
 		IdSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
 		IdSlot->SetHorizontalAlignment(HAlign_Center);
@@ -74,6 +166,7 @@ void UPokedexWidget::Rafraichir()
 		Helper->Poisson = Entry.Poisson;
 		Helper->Widget  = this;
 		Helper->bPeche  = Entry.bPeche;
+		Helper->Bouton  = Btn;
 		Helpers.Add(Helper);
 		Btn->OnClicked.AddDynamic(Helper, &UPokedexBoutonHelper::OnClique);
 
@@ -83,19 +176,33 @@ void UPokedexWidget::Rafraichir()
 		SizeBox->SetHeightOverride(140.f);
 		SizeBox->AddChild(Btn);
 
-		int32 Position = Index - 2; // Index a déjà été incrémenté
-		UUniformGridSlot* GridSlot = Cast<UUniformGridSlot>(ListePoissons->AddChildToUniformGrid(SizeBox, Position / 4, Position % 4));
+		int32 Position = Index - 1;
+		UUniformGridSlot* GridSlot = Cast<UUniformGridSlot>(
+			ListePoissons->AddChildToUniformGrid(SizeBox, Position / 4, Position % 4));
 		if (GridSlot)
 		{
 			GridSlot->SetHorizontalAlignment(HAlign_Fill);
 			GridSlot->SetVerticalAlignment(VAlign_Fill);
 		}
+		Index++;
 	}
-
-	RetourListe();
 }
 
-void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche)
+// ─── Boutons de tri : surligner le tri actif ─────────────────────────────────
+
+void UPokedexWidget::MettreAJourBoutonsTri()
+{
+	const FLinearColor Actif  = FLinearColor(0.2f, 0.6f, 1.0f);  // bleu = tri actif
+	const FLinearColor Inactif = FLinearColor::White;
+
+	if (BoutonTriNumero) BoutonTriNumero->SetBackgroundColor(TriActuel == ETriPokedex::Numero ? Actif : Inactif);
+	if (BoutonTriRarete) BoutonTriRarete->SetBackgroundColor(TriActuel == ETriPokedex::Rarete ? Actif : Inactif);
+	if (BoutonTriLieu)   BoutonTriLieu  ->SetBackgroundColor(TriActuel == ETriPokedex::Lieu   ? Actif : Inactif);
+}
+
+// ─── Détail ──────────────────────────────────────────────────────────────────
+
+void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche, UButton* BoutonSource)
 {
 	if (!Poisson) return;
 
@@ -122,7 +229,6 @@ void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche)
 
 		if (ViewerActor)
 		{
-			// Toujours charger le mesh — matériau noir si non découvert
 			UStaticMesh* Mesh = Poisson->Mesh.LoadSynchronous();
 			UMaterialInterface* Mat = bPeche ? Poisson->Materiau.LoadSynchronous() : MateriauSilhouette;
 			ViewerActor->SetMesh(Mesh, Mat, bPeche);
@@ -139,8 +245,33 @@ void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche)
 		}
 	}
 
+	// Curseur de sélection : reset l'ancien, assombrit le nouveau
+	SurlignerBouton(BoutonActif, false);
+	BoutonActif = BoutonSource;
+	SurlignerBouton(BoutonActif, true);
+
 	SetDetailVisible(true);
 }
+
+void UPokedexWidget::SurlignerBouton(UButton* Bouton, bool bSurligne)
+{
+	if (!Bouton) return;
+
+	for (UPokedexBoutonHelper* H : Helpers)
+	{
+		if (H && H->Bouton == Bouton && H->Poisson)
+		{
+			FLinearColor Couleur = CouleurRarete(H->Poisson->Rarete);
+			// Sélectionné : assombrir la couleur de rareté (×0.5)
+			if (bSurligne)
+				Couleur = FLinearColor(Couleur.R * 0.5f, Couleur.G * 0.5f, Couleur.B * 0.5f, 1.0f);
+			Bouton->SetBackgroundColor(Couleur);
+			return;
+		}
+	}
+}
+
+// ─── Visibilité ───────────────────────────────────────────────────────────────
 
 void UPokedexWidget::NativeDestruct()
 {
@@ -187,17 +318,18 @@ FReply UPokedexWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const 
 
 void UPokedexWidget::RetourListe()
 {
+	SurlignerBouton(BoutonActif, false);
+	BoutonActif = nullptr;
 	SetDetailVisible(false);
 }
 
 void UPokedexWidget::SetDetailVisible(bool bVisible)
 {
 	ESlateVisibility DetailVis = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
-	ESlateVisibility ListeVis  = bVisible ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
 
 	if (IconePoisson)        IconePoisson->SetVisibility(DetailVis);
 	if (NomPoisson)          NomPoisson->SetVisibility(DetailVis);
 	if (DescriptionPoisson)  DescriptionPoisson->SetVisibility(DetailVis);
 	if (BoutonRetour)        BoutonRetour->SetVisibility(DetailVis);
-	if (ScrollListe)         ScrollListe->SetVisibility(ListeVis);
+	// ScrollListe reste toujours visible
 }
