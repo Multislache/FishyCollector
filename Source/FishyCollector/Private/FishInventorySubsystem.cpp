@@ -18,8 +18,22 @@ void UFishInventorySubsystem::AddFish(UPoissonTemplate* Fish)
     if (!Fish) return;
 
     FFishCatchRecord Record;
-    Record.Poids = FMath::RandRange(Fish->PoidsMin, Fish->PoidsMax);
+    // Taille aléatoire
     Record.Taille = FMath::RandRange(Fish->TailleMin, Fish->TailleMax);
+
+    // Normalisation (0 → 1)
+    float Range = Fish->TailleMax - Fish->TailleMin;
+    float Alpha = (Range > 0.f) ? (Record.Taille - Fish->TailleMin) / Range : 0.f;
+
+    // Courbe réaliste (poids dépend du volume ≈ cube)
+    float WeightFactor = FMath::Pow(Alpha, 3);
+
+    // Interpolation du poids
+    Record.Poids = FMath::Lerp(Fish->PoidsMin, Fish->PoidsMax, WeightFactor);
+
+    // Petite variation naturelle
+    float RandomFactor = FMath::RandRange(0.85f, 1.15f);
+    Record.Poids *= RandomFactor;
     
     if (Fish->Rarete == EPoissonRarete::Legendaire)
     {
@@ -147,3 +161,4 @@ void UFishInventorySubsystem::OnAssetsLoaded(
     OnInventoryUpdated.Broadcast();
     UE_LOG(LogTemp, Display, TEXT("FishInventory: Chargement async OK (%d entrées)"), Inventory.Num());
 }
+
