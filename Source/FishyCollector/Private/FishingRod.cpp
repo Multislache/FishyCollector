@@ -231,7 +231,7 @@ void AFishingRod::EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish)
             Manager->MarquerCommePeche(CaughtFish);
         }
 
-        SetState(EFishingRodState::Tirer);
+        SetState(EFishingRodState::Repos);
         if (FishNotifyWidgetClass)
         {
             APlayerController* PC = GetWorld()->GetFirstPlayerController();
