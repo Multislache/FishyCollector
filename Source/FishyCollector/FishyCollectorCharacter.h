@@ -187,9 +187,10 @@ private:
 	void ToggleInventaire();
 	void RetourGeneral();
 
-	// Helpers génériques – partagés par tous les toggles de widget
+public:
 	void OuvrirWidget(UUserWidget* Widget, APlayerController* PC);
 	void FermerWidget(APlayerController* PC);
+private:
 	class UFishyBaseWidget* GetWidgetOuvert() const;
 
 	// Navigation joystick → grid (injection D-pad dans Slate)

@@ -74,6 +74,10 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+	// Bloque Gamepad_FaceButton_Bottom avant qu'il atteigne les boutons enfants.
+	// Seul AccepterUI() (qui injecte Enter) peut valider un bouton en focus.
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 private:
 	// Wrapper UFUNCTION pour le timer (BlueprintNativeEvent ne peut pas être callback direct)
 	UFUNCTION()

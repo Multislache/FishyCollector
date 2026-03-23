@@ -489,9 +489,9 @@ void AFishyCollectorCharacter::AccepterUI()
 	// Popup ouvert → ne pas cliquer sur le widget parent derrière
 	if (PopupActif && PopupActif->IsInViewport()) return;
 
-	// Simuler la touche "Accept" gamepad → déclenche OnClicked sur le bouton en focus
-	FKeyEvent Down(EKeys::Gamepad_FaceButton_Bottom, FModifierKeysState(), 0, false, 0, 0);
-	FKeyEvent Up(EKeys::Gamepad_FaceButton_Bottom, FModifierKeysState(), 0, false, 0, 0);
+	// Injecter Enter (pas Gamepad_FaceButton_Bottom qui est bloqué par NativeOnPreviewKeyDown)
+	FKeyEvent Down(EKeys::Enter, FModifierKeysState(), 0, false, 0, 0);
+	FKeyEvent Up(EKeys::Enter, FModifierKeysState(), 0, false, 0, 0);
 	FSlateApplication::Get().ProcessKeyDownEvent(Down);
 	FSlateApplication::Get().ProcessKeyUpEvent(Up);
 }
@@ -503,6 +503,9 @@ void AFishyCollectorCharacter::OuvrirWidget(UUserWidget* Widget, APlayerControll
 	bUIWidgetOuvert = true;
 	Widget->AddToViewport();
 
+	// GameAndUI : la souris peut cliquer les boutons du widget.
+	// Gamepad_FaceButton_Bottom est bloqué par NativeOnPreviewKeyDown dans FishyBaseWidget
+	// donc Jump ne peut plus valider un bouton en focus.
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(Widget->TakeWidget());
 	PC->SetInputMode(InputMode);
@@ -569,6 +572,13 @@ void AFishyCollectorCharacter::RetourGeneral()
 	if (InventaireWidget && InventaireWidget->IsInViewport())
 	{
 		ToggleInventaire();
+		return;
+	}
+
+	// Storage
+	if (NearbyStorage)
+	{
+		NearbyStorage->CloseStorage();
 		return;
 	}
 

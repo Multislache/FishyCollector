@@ -45,7 +45,7 @@ void AFishingRodStorage::OpenStorage(AFishyCollectorCharacter* PlayerCharacter)
         InteractWidgetInstance->RemoveFromParent();
         InteractWidgetInstance = nullptr;
     } 
-    StorageWidgetInstance->AddToViewport();
+    PlayerCharacter->OuvrirWidget(StorageWidgetInstance, PC);
 }
 
 void AFishingRodStorage::CloseStorage()
@@ -55,12 +55,6 @@ void AFishingRodStorage::CloseStorage()
 
     if (!InteractingPlayer) return;
     APlayerController* PC = Cast<APlayerController>(InteractingPlayer->GetController());
-    if (PC)
-    {
-        PC->SetInputMode(FInputModeGameOnly());
-        PC->SetShowMouseCursor(false);
-        PC->ResetIgnoreMoveInput();
-        PC->ResetIgnoreLookInput();
-    }
+    InteractingPlayer->FermerWidget(PC);
     InteractingPlayer = nullptr;
 }

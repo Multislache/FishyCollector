@@ -25,4 +25,14 @@ void UFishyBaseWidget::InjecterToucheHaut()      { InjecterTouche(EKeys::Gamepad
 void UFishyBaseWidget::InjecterToucheBas()       { InjecterTouche(EKeys::Gamepad_DPad_Down); }
 void UFishyBaseWidget::InjecterToucheGauche()    { InjecterTouche(EKeys::Gamepad_DPad_Left); }
 void UFishyBaseWidget::InjecterToucheDroite()    { InjecterTouche(EKeys::Gamepad_DPad_Right); }
-void UFishyBaseWidget::InjecterToucheAccepter()  { InjecterTouche(EKeys::Gamepad_FaceButton_Bottom); }
+void UFishyBaseWidget::InjecterToucheAccepter()  { InjecterTouche(EKeys::Enter); }
+
+FReply UFishyBaseWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	// Consommer Gamepad_FaceButton_Bottom (bouton Jump/X PS5) avant qu'il atteigne
+	// les boutons enfants. Seul AccepterUI() (injection Enter) peut valider le focus.
+	if (InKeyEvent.GetKey() == EKeys::Gamepad_FaceButton_Bottom)
+		return FReply::Handled();
+
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+}
