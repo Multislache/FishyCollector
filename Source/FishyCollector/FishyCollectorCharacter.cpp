@@ -13,10 +13,12 @@
 #include "FishingRodStorage.h"
 #include "InputActionValue.h"
 #include "PokedexWidget.h"
+#include "FishyBaseWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
 #include "Public/PokedexManager.h"
+#include "Framework/Application/SlateApplication.h"
 
 
 void AFishyCollectorCharacter::BeginPlay()
@@ -118,10 +120,16 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 			EnhancedInputComponent->BindAction(PokedexRotateRightAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterDroite);
 		}
 
-		// O / B – retour liste ou fermeture pokédex
-		if (PokedexRetourAction)
+		// IA_Retour – fermer le widget actuellement ouvert (pokédex, shop, inventaire…)
+		if (RetourAction)
 		{
-			EnhancedInputComponent->BindAction(PokedexRetourAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::PokedexRetour);
+			EnhancedInputComponent->BindAction(RetourAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::RetourGeneral);
+		}
+
+		// I / bouton manette – inventaire
+		if (InventaireAction)
+		{
+			EnhancedInputComponent->BindAction(InventaireAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleInventaire);
 		}
 	}
 	else
@@ -150,6 +158,13 @@ void AFishyCollectorCharacter::Look(const FInputActionValue& Value)
 
 void AFishyCollectorCharacter::DoMove(float Right, float Forward)
 {
+	// Quand un widget UI est ouvert, le joystick navigue dans la grille
+	if (bUIWidgetOuvert)
+	{
+		NaviguerUI(Right, Forward);
+		return;
+	}
+
 	if (GetController() != nullptr)
 	{
 		// find out which way is forward
@@ -159,10 +174,10 @@ void AFishyCollectorCharacter::DoMove(float Right, float Forward)
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-		// get right vector 
+		// get right vector
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// add movement 
+		// add movement
 		AddMovementInput(ForwardDirection, Forward);
 		AddMovementInput(RightDirection, Right);
 	}
@@ -189,10 +204,17 @@ void AFishyCollectorCharacter::DoJumpEnd()
 
 void AFishyCollectorCharacter::Interact()
 {
+	// Quand un widget UI est ouvert, cliquer le bouton en focus
+	if (bUIWidgetOuvert)
+	{
+		AccepterUI();
+		return;
+	}
+
 	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
 	{
 		FishingRod->HandleInput();
-		return; 
+		return;
 	}
 	if (NearbyStorage)
 	{
@@ -201,7 +223,7 @@ void AFishyCollectorCharacter::Interact()
 	}
 	if (bIsInFishingZone && FishingRod)
 	{
-		DoThrowLine(); 
+		DoThrowLine();
 	}
 	if (bIsInShopZone)
 	{
@@ -269,10 +291,7 @@ void AFishyCollectorCharacter::TogglePokedex()
 	if (PokedexWidget && PokedexWidget->IsInViewport())
 	{
 		PokedexWidget->RemoveFromParent();
-		PC->SetInputMode(FInputModeGameOnly());
-		PC->SetShowMouseCursor(false);
-		PC->ResetIgnoreMoveInput();
-		PC->ResetIgnoreLookInput();
+		FermerWidget(PC);
 	}
 	else
 	{
@@ -289,16 +308,7 @@ void AFishyCollectorCharacter::TogglePokedex()
 
 		if (PokedexWidget)
 		{
-			PokedexWidget->AddToViewport();
-			FInputModeGameAndUI InputMode;
-			InputMode.SetWidgetToFocus(PokedexWidget->TakeWidget());
-			PC->SetInputMode(InputMode);
-			PC->SetShowMouseCursor(true);
-			PC->SetIgnoreMoveInput(true);
-			PC->SetIgnoreLookInput(true);
-
-			// Focus initial pour la navigation gamepad (D-pad / joystick gauche)
-			PokedexWidget->FocuserPremierBouton();
+			OuvrirWidget(PokedexWidget, PC);
 		}
 	}
 }
@@ -312,10 +322,7 @@ void AFishyCollectorCharacter::ToggleShop()
 	if (ShopWidget && ShopWidget->IsInViewport())
 	{
 		ShopWidget->RemoveFromParent();
-		PC->SetInputMode(FInputModeGameOnly());
-		PC->SetShowMouseCursor(false);
-		PC->ResetIgnoreMoveInput();
-		PC->ResetIgnoreLookInput();
+		FermerWidget(PC);
 	}
 	else
 	{
@@ -326,13 +333,7 @@ void AFishyCollectorCharacter::ToggleShop()
 
 		if (ShopWidget)
 		{
-			ShopWidget->AddToViewport();
-			FInputModeGameAndUI InputMode;
-			InputMode.SetWidgetToFocus(ShopWidget->TakeWidget());
-			PC->SetInputMode(InputMode);
-			PC->SetShowMouseCursor(true);
-			PC->SetIgnoreMoveInput(true);
-			PC->SetIgnoreLookInput(true);
+			OuvrirWidget(ShopWidget, PC);
 		}
 	}
 }
@@ -375,56 +376,186 @@ TSubclassOf<AFishingRod> AFishyCollectorCharacter::GetCurrentRodClass() const
 
 void AFishyCollectorCharacter::JumpSiPokedexFerme()
 {
-	if (PokedexWidget && PokedexWidget->IsInViewport()) return;
+	if (bUIWidgetOuvert) return;
 	Jump();
+}
+
+UFishyBaseWidget* AFishyCollectorCharacter::GetWidgetOuvert() const
+{
+	// Le popup a priorité : il est "au-dessus" du widget parent
+	if (PopupActif && PopupActif->IsInViewport()) return PopupActif;
+	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(PokedexWidget);   W && W->IsInViewport()) return W;
+	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(ShopWidget);      W && W->IsInViewport()) return W;
+	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(InventaireWidget);W && W->IsInViewport()) return W;
+	return nullptr;
+}
+
+void AFishyCollectorCharacter::SetPopupActif(UFishyBaseWidget* Popup)
+{
+	PopupActif = Popup;
 }
 
 void AFishyCollectorCharacter::PokedexRoterGauche()
 {
-	if (!PokedexWidget || !PokedexWidget->IsInViewport()) return;
-
-	if (PokedexWidget->EstDetailVisible())
-	{
-		// Vue détail : rotation continue du modèle 3D
-		const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
-		PokedexWidget->RoterModele(-90.f * DeltaTime);
-	}
-	else
-	{
-		// Vue liste : cycle entre les onglets de tri
-		PokedexWidget->NaviguerTriGauche();
-	}
+	if (!bUIWidgetOuvert) return;
+	if (UFishyBaseWidget* Widget = GetWidgetOuvert())
+		Widget->NaviguerGauche();
 }
 
 void AFishyCollectorCharacter::PokedexRoterDroite()
 {
-	if (!PokedexWidget || !PokedexWidget->IsInViewport()) return;
-
-	if (PokedexWidget->EstDetailVisible())
-	{
-		// Vue détail : rotation continue du modèle 3D
-		const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
-		PokedexWidget->RoterModele(90.f * DeltaTime);
-	}
-	else
-	{
-		// Vue liste : cycle entre les onglets de tri
-		PokedexWidget->NaviguerTriDroite();
-	}
+	if (!bUIWidgetOuvert) return;
+	if (UFishyBaseWidget* Widget = GetWidgetOuvert())
+		Widget->NaviguerDroite();
 }
 
-void AFishyCollectorCharacter::PokedexRetour()
+void AFishyCollectorCharacter::ToggleInventaire()
 {
-	if (!PokedexWidget || !PokedexWidget->IsInViewport()) return;
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+	if (!InventaireWidgetClass) return;
 
-	if (PokedexWidget->EstDetailVisible())
+	if (InventaireWidget && InventaireWidget->IsInViewport())
 	{
-		// Dans la vue détail → revenir à la liste
-		PokedexWidget->RetourListe();
+		InventaireWidget->RemoveFromParent();
+		FermerWidget(PC);
 	}
 	else
 	{
-		// Dans la liste → fermer le pokédex
-		TogglePokedex();
+		if (!InventaireWidget)
+		{
+			InventaireWidget = CreateWidget<UUserWidget>(PC, InventaireWidgetClass);
+		}
+
+		if (InventaireWidget)
+		{
+			OuvrirWidget(InventaireWidget, PC);
+		}
 	}
 }
+
+void AFishyCollectorCharacter::NaviguerUI(float X, float Y)
+{
+	// Popup ouvert → ne pas naviguer dans le widget parent derrière
+	if (PopupActif && PopupActif->IsInViewport()) return;
+
+	constexpr float Seuil = 0.5f;
+
+	// Joystick au centre → reset debounce pour réactivité immédiate au prochain push
+	if (FMath::Abs(X) < Seuil && FMath::Abs(Y) < Seuil)
+	{
+		DernierNavigationUI = 0.f;
+		return;
+	}
+
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+	constexpr float Debounce = 0.18f;
+	if (Now - DernierNavigationUI < Debounce) return;
+	DernierNavigationUI = Now;
+
+	// Direction dominante → événement D-pad correspondant injecté dans Slate
+	FKey NavKey;
+	if (FMath::Abs(X) >= FMath::Abs(Y))
+		NavKey = (X > 0.f) ? EKeys::Gamepad_DPad_Right : EKeys::Gamepad_DPad_Left;
+	else
+		NavKey = (Y > 0.f) ? EKeys::Gamepad_DPad_Up : EKeys::Gamepad_DPad_Down;
+
+	FKeyEvent Down(NavKey, FModifierKeysState(), 0, false, 0, 0);
+	FKeyEvent Up  (NavKey, FModifierKeysState(), 0, false, 0, 0);
+	FSlateApplication::Get().ProcessKeyDownEvent(Down);
+	FSlateApplication::Get().ProcessKeyUpEvent(Up);
+}
+
+void AFishyCollectorCharacter::AccepterUI()
+{
+	// Popup ouvert → ne pas cliquer sur le widget parent derrière
+	if (PopupActif && PopupActif->IsInViewport()) return;
+
+	// Simuler la touche "Accept" gamepad → déclenche OnClicked sur le bouton en focus
+	FKeyEvent Down(EKeys::Gamepad_FaceButton_Bottom, FModifierKeysState(), 0, false, 0, 0);
+	FKeyEvent Up(EKeys::Gamepad_FaceButton_Bottom, FModifierKeysState(), 0, false, 0, 0);
+	FSlateApplication::Get().ProcessKeyDownEvent(Down);
+	FSlateApplication::Get().ProcessKeyUpEvent(Up);
+}
+
+void AFishyCollectorCharacter::OuvrirWidget(UUserWidget* Widget, APlayerController* PC)
+{
+	if (!Widget || !PC) return;
+
+	bUIWidgetOuvert = true;
+	Widget->AddToViewport();
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(Widget->TakeWidget());
+	PC->SetInputMode(InputMode);
+	PC->SetShowMouseCursor(true);
+	PC->SetIgnoreMoveInput(true);
+	PC->SetIgnoreLookInput(true);
+
+	// Appeler l'event Blueprint pour placer le focus sur le premier élément navigable
+	if (UFishyBaseWidget* FishyWidget = Cast<UFishyBaseWidget>(Widget))
+		FishyWidget->InitialiserFocusGamepad();
+	else
+		Widget->SetUserFocus(PC);
+}
+
+void AFishyCollectorCharacter::FermerWidget(APlayerController* PC)
+{
+	if (!PC) return;
+
+	bUIWidgetOuvert = false;
+	PC->SetInputMode(FInputModeGameOnly());
+	PC->SetShowMouseCursor(false);
+	PC->ResetIgnoreMoveInput();
+	PC->ResetIgnoreLookInput();
+}
+
+void AFishyCollectorCharacter::RetourGeneral()
+{
+	if (!bUIWidgetOuvert) return;
+
+	// Laisser le widget gérer le retour lui-même (ex : fermer un popup interne)
+	if (UFishyBaseWidget* W = GetWidgetOuvert())
+	{
+		if (W->GererRetour())
+		{
+			// Si c'était un popup, l'effacer et remettre le focus sur le widget parent
+			if (W == PopupActif)
+			{
+				PopupActif = nullptr;
+				if (UFishyBaseWidget* Parent = GetWidgetOuvert())
+					Parent->InitialiserFocusGamepad();
+			}
+			return;
+		}
+	}
+
+	// Pokédex : détail → liste, liste → fermer
+	if (PokedexWidget && PokedexWidget->IsInViewport())
+	{
+		if (PokedexWidget->EstDetailVisible())
+			PokedexWidget->RetourListe();
+		else
+			TogglePokedex();
+		return;
+	}
+
+	// Shop
+	if (ShopWidget && ShopWidget->IsInViewport())
+	{
+		ToggleShop();
+		return;
+	}
+
+	// Inventaire
+	if (InventaireWidget && InventaireWidget->IsInViewport())
+	{
+		ToggleInventaire();
+		return;
+	}
+
+	// Fallback : widget inconnu ouvert depuis Blueprint → reset propre
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	FermerWidget(PC);
+}
+

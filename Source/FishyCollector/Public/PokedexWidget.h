@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "FishyBaseWidget.h"
 #include "PokedexManager.h"
 #include "PoissonTemplate.h"
 #include "PokedexWidget.generated.h"
@@ -47,7 +47,7 @@ public:
 };
 
 UCLASS()
-class FISHYCOLLECTOR_API UPokedexWidget : public UUserWidget
+class FISHYCOLLECTOR_API UPokedexWidget : public UFishyBaseWidget
 {
 	GENERATED_BODY()
 
@@ -67,7 +67,10 @@ public:
 
 	bool EstDetailVisible() const { return bDetailVisible; }
 
-	// Met le focus gamepad sur le premier bouton de la grille (ou le bouton actif si on revient du détail)
+	virtual void InitialiserFocusGamepad_Implementation() override;
+	virtual void NaviguerGauche_Implementation() override;
+	virtual void NaviguerDroite_Implementation() override;
+
 	void FocuserPremierBouton();
 
 	// Navigation L1/R1 entre les onglets de tri (vue liste uniquement)

@@ -69,21 +69,35 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PokedexRotateRightAction;
 
-	// O / B – retour liste ou fermer le pokédex
 	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* PokedexRetourAction;
+	UInputAction* RetourAction;
+
+	// I / bouton manette – ouvrir/fermer l'inventaire
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InventaireAction;
 
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> ShopWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> InventaireWidgetClass;
 	
 	UPROPERTY(BlueprintReadOnly, Category="UI")
 	UUserWidget* ShopWidget;
 
 	UPROPERTY()
+	UUserWidget* InventaireWidget;
+
+	UPROPERTY()
 	UPokedexWidget* PokedexWidget;
+
+	// Popup ouvert par un widget enfant (ex : détail d'un slot d'inventaire).
+	// Renseigné/effacé par Blueprint via SetPopupActif.
+	UPROPERTY(BlueprintReadOnly, Category="UI")
+	UFishyBaseWidget* PopupActif = nullptr;
 	
 
 	UPROPERTY(BlueprintReadWrite, Category="Fishing")
@@ -171,9 +185,32 @@ private:
 	void JumpSiPokedexFerme();
 	void PokedexRoterGauche();
 	void PokedexRoterDroite();
-	void PokedexRetour();
+	void ToggleInventaire();
+	void RetourGeneral();
+
+	// Helpers génériques – partagés par tous les toggles de widget
+	void OuvrirWidget(UUserWidget* Widget, APlayerController* PC);
+	void FermerWidget(APlayerController* PC);
+	class UFishyBaseWidget* GetWidgetOuvert() const;
+
+	// Navigation joystick → grid (injection D-pad dans Slate)
+	void NaviguerUI(float X, float Y);
+
+	// Clic sur le bouton en focus (IA_InteractAction quand UI ouverte)
+	void AccepterUI();
+
+	// true quand un widget UI est visible – bloque mouvement, caméra et saut
+	bool bUIWidgetOuvert = false;
+
+	// Debounce pour la navigation joystick dans la grille
+	float DernierNavigationUI = 0.f;
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleShop();
+
+	// Appelé par Blueprint (WBP_Slot) quand un popup s'ouvre/se ferme.
+	// Passer nullptr pour effacer.
+	UFUNCTION(BlueprintCallable, Category="UI")
+	void SetPopupActif(UFishyBaseWidget* Popup);
 };
 

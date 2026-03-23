@@ -354,6 +354,37 @@ void UPokedexWidget::RetourListe()
 	SetDetailVisible(false);
 }
 
+void UPokedexWidget::InitialiserFocusGamepad_Implementation()
+{
+	FocuserPremierBouton();
+}
+
+void UPokedexWidget::NaviguerGauche_Implementation()
+{
+	if (bDetailVisible)
+	{
+		const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
+		RoterModele(-90.f * DeltaTime);
+	}
+	else
+	{
+		NaviguerTriGauche();
+	}
+}
+
+void UPokedexWidget::NaviguerDroite_Implementation()
+{
+	if (bDetailVisible)
+	{
+		const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
+		RoterModele(90.f * DeltaTime);
+	}
+	else
+	{
+		NaviguerTriDroite();
+	}
+}
+
 void UPokedexWidget::FocuserPremierBouton()
 {
 	if (!PremierBouton) return;
