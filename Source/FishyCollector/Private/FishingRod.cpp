@@ -54,7 +54,12 @@ void AFishingRod::BeginPlay()
     }
 
     if (FishingLine) FishingLine->SetVisibility(false);
-    if (FishingHook) FishingHook->SetActorHiddenInGame(true);
+    if (FishingHook)
+    {
+        FishingHook->SetActorHiddenInGame(true);
+        FishingHook->OnHookLanded.AddDynamic(this, &AFishingRod::OnHookLandedInWater);
+        FishingHook->OnHookInvalidSurface.AddDynamic(this, &AFishingRod::OnHookInvalidSurface);
+    }
 }
 
 void AFishingRod::AttachToCharacter(ACharacter* Character, FName SocketName)
@@ -168,8 +173,34 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
 
 void AFishingRod::ShowHook()
 {
-    if (FishingHook) FishingHook->SetActorHiddenInGame(false);
-    SetState(EFishingRodState::Attente);
+    if (!FishingHook) return;
+
+    FishingHook->SetActorHiddenInGame(false);
+
+    // Faire un overlap check manuel à la position du hook
+    TArray<AActor*> OverlappingActors;
+    FishingHook->GetOverlappingActors(OverlappingActors);
+
+    bool bInWater = false;
+    for (AActor* Actor : OverlappingActors)
+    {
+        if (Actor && Actor->ActorHasTag(FName("water")))
+        {
+            bInWater = true;
+            break;
+        }
+    }
+
+    if (bInWater)
+    {
+        GetWorldTimerManager().ClearTimer(RodTimerHandle);
+        SetState(EFishingRodState::Attente);
+    }
+    else
+    {
+        // Pas dans l'eau → timeout de sécurité
+        GetWorldTimerManager().SetTimer(RodTimerHandle, this, &AFishingRod::OnHookTimeout, 2.0f, false);
+    }
 }
 
 void AFishingRod::StartWaitingForBite()
@@ -266,5 +297,43 @@ void AFishingRod::HandleInput()
         {
             FishingWidgetInstance->ProcessEvent(Func, nullptr);
         }
+    }
+}
+
+void AFishingRod::OnHookLandedInWater()
+{
+    if (CurrentState == EFishingRodState::Lance)
+    {
+        GetWorldTimerManager().ClearTimer(RodTimerHandle);
+        if (FishingHook) FishingHook->SetActorHiddenInGame(false);
+        SetState(EFishingRodState::Attente);
+    }
+}
+
+void AFishingRod::OnHookInvalidSurface()
+{
+    if (CurrentState == EFishingRodState::Lance)
+    {
+        GetWorldTimerManager().ClearTimer(RodTimerHandle);
+        GetWorldTimerManager().ClearTimer(FishBiteTimerHandle);
+        if (FishingHook) FishingHook->SetActorHiddenInGame(true);
+        SetState(EFishingRodState::Repos);
+    }
+}
+
+void AFishingRod::OnHookTimeout()
+{
+    UE_LOG(LogFishyCollector, Warning, TEXT("OnHookTimeout appelé, état: %d"), (uint8)CurrentState);
+
+    if (CurrentState == EFishingRodState::Lance)
+    {
+        if (FishingHook && FishingHook->WrongSurfaceSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, FishingHook->WrongSurfaceSound,
+                FishingHook->GetActorLocation());
+        }
+
+        if (FishingHook) FishingHook->SetActorHiddenInGame(true);
+        SetState(EFishingRodState::Repos);
     }
 }

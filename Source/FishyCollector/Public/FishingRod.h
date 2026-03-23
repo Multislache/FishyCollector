@@ -31,6 +31,12 @@ class FISHYCOLLECTOR_API AFishingRod : public AActor
 public:
 	AFishingRod();
 
+	UFUNCTION()
+	void OnHookLandedInWater();
+
+	UFUNCTION()
+	void OnHookInvalidSurface();
+
 protected:
 	virtual void BeginPlay() override;
 	
@@ -104,6 +110,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fishing")
 	FText RodDisplayName = FText::FromString("Canne à pêche");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* WrongSurfaceSound;
 	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;
@@ -114,4 +123,7 @@ private:
 	void StartWaitingForBite();
 	void TriggerFishBite();
 	void ShowHook();
+
+	bool bHookLandedInWater = false;
+	void OnHookTimeout();
 };
