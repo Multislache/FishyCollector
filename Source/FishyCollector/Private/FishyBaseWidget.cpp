@@ -7,9 +7,7 @@ void UFishyBaseWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Différer d'une frame pour que Slate ait le temps de layouter le widget
-	// avant d'appeler SetUserFocus (sinon le focus est ignoré silencieusement)
-	if (GetWorld())
+	if (IsInViewport() && GetWorld())
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UFishyBaseWidget::AppliquerFocusInitial);
 }
 

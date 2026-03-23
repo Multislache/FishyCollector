@@ -433,22 +433,24 @@ void AFishyCollectorCharacter::ToggleInventaire()
 	if (!PC) return;
 	if (!InventaireWidgetClass) return;
 
-	if (InventaireWidget && InventaireWidget->IsInViewport())
+	// Inventaire déjà ouvert → fermer
+	if (bUIWidgetOuvert && InventaireWidget)
 	{
 		InventaireWidget->RemoveFromParent();
+		InventaireWidget = nullptr;
 		FermerWidget(PC);
+		return;
 	}
-	else
-	{
-		if (!InventaireWidget)
-		{
-			InventaireWidget = CreateWidget<UUserWidget>(PC, InventaireWidgetClass);
-		}
 
-		if (InventaireWidget)
-		{
-			OuvrirWidget(InventaireWidget, PC);
-		}
+	// Tout autre widget ouvert → ne rien faire
+	if (bUIWidgetOuvert) return;
+
+	// Toujours recréer pour éviter les doublons
+	InventaireWidget = CreateWidget<UUserWidget>(PC, InventaireWidgetClass);
+
+	if (InventaireWidget)
+	{
+		OuvrirWidget(InventaireWidget, PC);
 	}
 }
 
@@ -503,9 +505,6 @@ void AFishyCollectorCharacter::OuvrirWidget(UUserWidget* Widget, APlayerControll
 	bUIWidgetOuvert = true;
 	Widget->AddToViewport();
 
-	// GameAndUI : la souris peut cliquer les boutons du widget.
-	// Gamepad_FaceButton_Bottom est bloqué par NativeOnPreviewKeyDown dans FishyBaseWidget
-	// donc Jump ne peut plus valider un bouton en focus.
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(Widget->TakeWidget());
 	PC->SetInputMode(InputMode);
@@ -513,10 +512,7 @@ void AFishyCollectorCharacter::OuvrirWidget(UUserWidget* Widget, APlayerControll
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
 
-	// Appeler l'event Blueprint pour placer le focus sur le premier élément navigable
-	if (UFishyBaseWidget* FishyWidget = Cast<UFishyBaseWidget>(Widget))
-		FishyWidget->InitialiserFocusGamepad();
-	else
+	if (!Cast<UFishyBaseWidget>(Widget))
 		Widget->SetUserFocus(PC);
 }
 
@@ -529,6 +525,19 @@ void AFishyCollectorCharacter::FermerWidget(APlayerController* PC)
 	PC->SetShowMouseCursor(false);
 	PC->ResetIgnoreMoveInput();
 	PC->ResetIgnoreLookInput();
+}
+
+void AFishyCollectorCharacter::FermerInventaire()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	if (InventaireWidget && InventaireWidget->IsInViewport())
+	{
+		InventaireWidget->RemoveFromParent();
+		InventaireWidget = nullptr;
+	}
+	FermerWidget(PC);
 }
 
 void AFishyCollectorCharacter::RetourGeneral()

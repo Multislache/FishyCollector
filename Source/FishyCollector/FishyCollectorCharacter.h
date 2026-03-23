@@ -208,6 +208,9 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void ToggleShop();
 
+	UFUNCTION(BlueprintCallable, Category="UI")
+	void FermerInventaire();
+
 	// Appelé par Blueprint (WBP_Slot) quand un popup s'ouvre/se ferme.
 	// Passer nullptr pour effacer.
 	UFUNCTION(BlueprintCallable, Category="UI")
