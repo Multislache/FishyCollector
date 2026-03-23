@@ -328,7 +328,9 @@ void UPokedexWidget::SetDetailVisible(bool bVisible)
 	ESlateVisibility DetailVis = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
 
 	if (IconePoisson)        IconePoisson->SetVisibility(DetailVis);
+	if (NomText)             NomText->SetVisibility(DetailVis);
 	if (NomPoisson)          NomPoisson->SetVisibility(DetailVis);
+	if (DescriptionText)     DescriptionText->SetVisibility(DetailVis);
 	if (DescriptionPoisson)  DescriptionPoisson->SetVisibility(DetailVis);
 	if (BoutonRetour)        BoutonRetour->SetVisibility(DetailVis);
 	// ScrollListe reste toujours visible

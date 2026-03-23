@@ -94,7 +94,13 @@ protected:
 	UImage* IconePoisson;
 
 	UPROPERTY(meta = (BindWidget))
+	UTextBlock* NomText;
+
+	UPROPERTY(meta = (BindWidget))
 	UTextBlock* NomPoisson;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* DescriptionText;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* DescriptionPoisson;
