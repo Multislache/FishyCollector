@@ -61,6 +61,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* ResetPokedexAction;
 
+	// L1 / Left Shoulder – rotation modèle 3D pokédex
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PokedexRotateLeftAction;
+
+	// R1 / Right Shoulder – rotation modèle 3D pokédex
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PokedexRotateRightAction;
+
+	// O / B – retour liste ou fermer le pokédex
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PokedexRetourAction;
+
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
 
@@ -156,6 +168,10 @@ private:
 	void Interact();
 	void TogglePokedex();
 	void ResetPokedex();
+	void JumpSiPokedexFerme();
+	void PokedexRoterGauche();
+	void PokedexRoterDroite();
+	void PokedexRetour();
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleShop();

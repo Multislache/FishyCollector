@@ -78,8 +78,8 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		// Jumping – bloqué si le pokédex est ouvert
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::JumpSiPokedexFerme);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Moving
@@ -106,7 +106,22 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		if (ClickAction)
 		{
 			EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ClickInteractionManager);
+		}
 
+		// Rotation du modèle 3D pokédex via L1/R1
+		if (PokedexRotateLeftAction)
+		{
+			EnhancedInputComponent->BindAction(PokedexRotateLeftAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterGauche);
+		}
+		if (PokedexRotateRightAction)
+		{
+			EnhancedInputComponent->BindAction(PokedexRotateRightAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterDroite);
+		}
+
+		// O / B – retour liste ou fermeture pokédex
+		if (PokedexRetourAction)
+		{
+			EnhancedInputComponent->BindAction(PokedexRetourAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::PokedexRetour);
 		}
 	}
 	else
@@ -281,6 +296,9 @@ void AFishyCollectorCharacter::TogglePokedex()
 			PC->SetShowMouseCursor(true);
 			PC->SetIgnoreMoveInput(true);
 			PC->SetIgnoreLookInput(true);
+
+			// Focus initial pour la navigation gamepad (D-pad / joystick gauche)
+			PokedexWidget->FocuserPremierBouton();
 		}
 	}
 }
@@ -353,4 +371,60 @@ TSubclassOf<AFishingRod> AFishyCollectorCharacter::GetCurrentRodClass() const
 {
 	if (!FishingRod) return nullptr;
 	return FishingRod->GetClass();
+}
+
+void AFishyCollectorCharacter::JumpSiPokedexFerme()
+{
+	if (PokedexWidget && PokedexWidget->IsInViewport()) return;
+	Jump();
+}
+
+void AFishyCollectorCharacter::PokedexRoterGauche()
+{
+	if (!PokedexWidget || !PokedexWidget->IsInViewport()) return;
+
+	if (PokedexWidget->EstDetailVisible())
+	{
+		// Vue détail : rotation continue du modèle 3D
+		const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
+		PokedexWidget->RoterModele(-90.f * DeltaTime);
+	}
+	else
+	{
+		// Vue liste : cycle entre les onglets de tri
+		PokedexWidget->NaviguerTriGauche();
+	}
+}
+
+void AFishyCollectorCharacter::PokedexRoterDroite()
+{
+	if (!PokedexWidget || !PokedexWidget->IsInViewport()) return;
+
+	if (PokedexWidget->EstDetailVisible())
+	{
+		// Vue détail : rotation continue du modèle 3D
+		const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
+		PokedexWidget->RoterModele(90.f * DeltaTime);
+	}
+	else
+	{
+		// Vue liste : cycle entre les onglets de tri
+		PokedexWidget->NaviguerTriDroite();
+	}
+}
+
+void AFishyCollectorCharacter::PokedexRetour()
+{
+	if (!PokedexWidget || !PokedexWidget->IsInViewport()) return;
+
+	if (PokedexWidget->EstDetailVisible())
+	{
+		// Dans la vue détail → revenir à la liste
+		PokedexWidget->RetourListe();
+	}
+	else
+	{
+		// Dans la liste → fermer le pokédex
+		TogglePokedex();
+	}
 }

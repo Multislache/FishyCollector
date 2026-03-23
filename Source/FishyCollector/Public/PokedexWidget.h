@@ -61,6 +61,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pokedex")
 	void RetourListe();
 
+	// Rotation du modèle 3D (appelé par la manette via L1/R1)
+	UFUNCTION(BlueprintCallable, Category = "Pokedex")
+	void RoterModele(float DeltaYaw);
+
+	bool EstDetailVisible() const { return bDetailVisible; }
+
+	// Met le focus gamepad sur le premier bouton de la grille (ou le bouton actif si on revient du détail)
+	void FocuserPremierBouton();
+
+	// Navigation L1/R1 entre les onglets de tri (vue liste uniquement)
+	void NaviguerTriGauche();
+	void NaviguerTriDroite();
+
 	// DataTable des lieux assigné dans le Blueprint (pour le tri par lieu)
 	UPROPERTY(EditAnywhere, Category = "Pokedex")
 	UDataTable* TableLieux;
@@ -141,8 +154,16 @@ private:
 	UPROPERTY()
 	UButton* BoutonActif = nullptr;
 
+	// Premier bouton de la grille – sert de point d'entrée pour la navigation gamepad
+	UPROPERTY()
+	UButton* PremierBouton = nullptr;
+
 	ETriPokedex TriActuel = ETriPokedex::Numero;
 
 	bool bDragging = false;
+	bool bDetailVisible = false;
+
+	// Debounce pour éviter de cycler trop vite avec L1/R1 (secondes)
+	float DernierChangementTri = 0.f;
 
 };

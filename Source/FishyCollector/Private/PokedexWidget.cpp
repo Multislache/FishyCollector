@@ -132,6 +132,7 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 	ListePoissons->ClearChildren();
 	Helpers.Empty();
 	BoutonActif = nullptr;
+	PremierBouton = nullptr;
 
 	int32 Index = 1;
 	for (const FPokedexEntry& Entry : Entrees)
@@ -161,6 +162,10 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 		IdSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
 		IdSlot->SetHorizontalAlignment(HAlign_Center);
 
+		// Mémoriser le premier bouton pour la navigation gamepad
+		if (Index == 1)
+			PremierBouton = Btn;
+
 		// Helper pour le clic
 		UPokedexBoutonHelper* Helper = NewObject<UPokedexBoutonHelper>(this);
 		Helper->Poisson = Entry.Poisson;
@@ -186,6 +191,11 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 		}
 		Index++;
 	}
+
+	// Après un rebuild de grille (ex. changement de tri), redonner le focus au premier bouton
+	// pour que le joystick continue de fonctionner.
+	if (IsInViewport())
+		FocuserPremierBouton();
 }
 
 // ─── Boutons de tri : surligner le tri actif ─────────────────────────────────
@@ -251,6 +261,16 @@ void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche, UBut
 	SurlignerBouton(BoutonActif, true);
 
 	SetDetailVisible(true);
+
+	// Focus gamepad sur le bouton Retour pour permettre de revenir à la liste avec X
+	if (BoutonRetour)
+	{
+		APlayerController* PC = GetOwningPlayer();
+		if (PC)
+			BoutonRetour->SetUserFocus(PC);
+		else
+			BoutonRetour->SetKeyboardFocus();
+	}
 }
 
 void UPokedexWidget::SurlignerBouton(UButton* Bouton, bool bSurligne)
@@ -318,13 +338,73 @@ FReply UPokedexWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const 
 
 void UPokedexWidget::RetourListe()
 {
+	// Remettre le focus gamepad sur le dernier bouton sélectionné (ou le premier si aucun)
+	UButton* BoutonARefocus = BoutonActif ? BoutonActif : PremierBouton;
+	if (BoutonARefocus)
+	{
+		APlayerController* PC = GetOwningPlayer();
+		if (PC)
+			BoutonARefocus->SetUserFocus(PC);
+		else
+			BoutonARefocus->SetKeyboardFocus();
+	}
+
 	SurlignerBouton(BoutonActif, false);
 	BoutonActif = nullptr;
 	SetDetailVisible(false);
 }
 
+void UPokedexWidget::FocuserPremierBouton()
+{
+	if (!PremierBouton) return;
+
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+		PremierBouton->SetUserFocus(PC);
+	else
+		PremierBouton->SetKeyboardFocus();
+}
+
+void UPokedexWidget::NaviguerTriGauche()
+{
+	// Debounce : ignorer si le dernier changement est trop récent
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+	if (Now - DernierChangementTri < 0.25f) return;
+	DernierChangementTri = Now;
+
+	// Numero ← Lieu ← Rarete ← Numero (cycle vers la gauche)
+	switch (TriActuel)
+	{
+	case ETriPokedex::Numero: TrierParLieu();    break;
+	case ETriPokedex::Rarete: TrierParNumero();  break;
+	case ETriPokedex::Lieu:   TrierParRarete();  break;
+	}
+}
+
+void UPokedexWidget::NaviguerTriDroite()
+{
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+	if (Now - DernierChangementTri < 0.25f) return;
+	DernierChangementTri = Now;
+
+	// Numero → Rarete → Lieu → Numero (cycle vers la droite)
+	switch (TriActuel)
+	{
+	case ETriPokedex::Numero: TrierParRarete(); break;
+	case ETriPokedex::Rarete: TrierParLieu();   break;
+	case ETriPokedex::Lieu:   TrierParNumero(); break;
+	}
+}
+
+void UPokedexWidget::RoterModele(float DeltaYaw)
+{
+	if (ViewerActor && bDetailVisible)
+		ViewerActor->AjouterRotationYaw(DeltaYaw);
+}
+
 void UPokedexWidget::SetDetailVisible(bool bVisible)
 {
+	bDetailVisible = bVisible;
 	ESlateVisibility DetailVis = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
 
 	if (IconePoisson)        IconePoisson->SetVisibility(DetailVis);
