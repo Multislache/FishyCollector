@@ -85,7 +85,6 @@ protected:
 	UPROPERTY()
 	UPokedexWidget* PokedexWidget;
 	
-
 	UPROPERTY(BlueprintReadWrite, Category="Fishing")
 	AFishingRodStorage* NearbyStorage;
 
@@ -145,8 +144,8 @@ public:
 	void SetNearbyStorage(AFishingRodStorage* Storage);
 
 	UFUNCTION(BlueprintCallable, Category="Fishing")
-	void EquipRod(TSubclassOf<AFishingRod> NewRodClass);
-
+	void EquipRodFromData(UFishingRodData* RodData);
+	
 	UFUNCTION(BlueprintCallable, Category="Fishing")
 	void UnequipRod();
 

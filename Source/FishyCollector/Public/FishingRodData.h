@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "FishingRod.h"
 #include "Engine/DataAsset.h"
 #include "FishingRodData.generated.h"
 
@@ -15,7 +16,6 @@ class FISHYCOLLECTOR_API UFishingRodData : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
-
 	FPrimaryAssetId GetPrimaryAssetId() const override
     {
         return FPrimaryAssetId("FishingRod", GetFName());
@@ -27,9 +27,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod")
 	UStaticMesh* Mesh;
 
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Poisson")
-	//TSoftObjectPtr<UMaterialInterface> Materiau;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod")
 	UTexture2D* Icone;
 
@@ -38,5 +35,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod")
 	float Prix = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod")
+	TSubclassOf<AFishingRod> RodClass;
 	
 };

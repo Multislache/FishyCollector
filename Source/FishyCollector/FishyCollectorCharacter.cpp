@@ -341,7 +341,7 @@ void AFishyCollectorCharacter::SetNearbyStorage(AFishingRodStorage* Storage)
 {
 	NearbyStorage = Storage;
 }
-
+/*
 void AFishyCollectorCharacter::EquipRod(TSubclassOf<AFishingRod> NewRodClass)
 {
 	if (!NewRodClass) return;
@@ -356,6 +356,24 @@ void AFishyCollectorCharacter::EquipRod(TSubclassOf<AFishingRod> NewRodClass)
 	if (FishingRod)
 	{
 		FishingRod->AttachToCharacter(this);
+	}
+}*/
+
+void AFishyCollectorCharacter::EquipRodFromData(UFishingRodData* RodData)
+{
+	if (!RodData || !RodData->RodClass) return;
+
+	if (FishingRod)
+	{
+		FishingRod->DetachFromCharacter();
+		FishingRod->Destroy();
+		FishingRod = nullptr;
+	}
+	FishingRod = GetWorld()->SpawnActor<AFishingRod>(RodData->RodClass);
+	if (FishingRod)
+	{
+		FishingRod->AttachToCharacter(this);
+		EquippedFishingRod = RodData;
 	}
 }
 
