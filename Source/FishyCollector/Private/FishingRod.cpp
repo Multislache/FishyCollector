@@ -211,30 +211,43 @@ void AFishingRod::StartWaitingForBite()
 
 void AFishingRod::TriggerFishBite()
 {
+    // 1. On demande au GameMode de choisir un poisson selon le lieu actuel
+    AFishyCollectorGameMode* GM = GetWorld()->GetAuthGameMode<AFishyCollectorGameMode>();
+    if (GM && !CurrentLieuName.IsNone())
+    {
+        bool bSucces;
+        // On stocke le poisson choisi dans la canne
+        CurrentFishBiting = GM->TirerUnPoisson(CurrentLieuName, bSucces);
+    }
+
     SetState(EFishingRodState::Morsure);
 
-    if (FishingWidgetClass && FishingHook)
+    if (FishingWidgetClass && FishingHook && CurrentFishBiting)
     {
         UWidgetComponent* HookWidgetComp = FishingHook->GetQTEWidgetComponent();
         if (HookWidgetComp)
         {
             HookWidgetComp->SetVisibility(true);
-
             UUserWidget* NewWidget = HookWidgetComp->GetUserWidgetObject();
+            
             if (NewWidget)
             {
                 FishingWidgetInstance = NewWidget;
 
-                UFunction* ResetFunc = NewWidget->FindFunction(FName("ResetWidget"));
-                if (ResetFunc)
+                FProperty* FishProp = NewWidget->GetClass()->FindPropertyByName(FName("FishData"));
+                if (FObjectProperty* ObjProp = CastField<FObjectProperty>(FishProp))
                 {
-                    NewWidget->ProcessEvent(ResetFunc, nullptr);
+                    ObjProp->SetObjectPropertyValue(ObjProp->ContainerPtrToValuePtr<void>(NewWidget), CurrentFishBiting);
                 }
-                FProperty* Prop = NewWidget->GetClass()->FindPropertyByName(FName("ParentRod"));
-                if (FObjectProperty* ObjProp = CastField<FObjectProperty>(Prop))
+
+                FProperty* RodProp = NewWidget->GetClass()->FindPropertyByName(FName("ParentRod"));
+                if (FObjectProperty* ObjProp = CastField<FObjectProperty>(RodProp))
                 {
                     ObjProp->SetObjectPropertyValue(ObjProp->ContainerPtrToValuePtr<void>(NewWidget), this);
                 }
+
+                UFunction* ResetFunc = NewWidget->FindFunction(FName("ResetWidget"));
+                if (ResetFunc) NewWidget->ProcessEvent(ResetFunc, nullptr);
             }
         }
     }
@@ -336,4 +349,9 @@ void AFishingRod::OnHookTimeout()
         if (FishingHook) FishingHook->SetActorHiddenInGame(true);
         SetState(EFishingRodState::Repos);
     }
+}
+
+void AFishingRod::setLieuName(FName NewLieuName)
+{
+    CurrentLieuName = NewLieuName;
 }

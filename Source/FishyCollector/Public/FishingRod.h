@@ -72,8 +72,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> FishNotifyWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Fishing")
+	FName CurrentLieuName;
 	
 public:
+	UFUNCTION(BlueprintCallable, Category="Fishing")
+	void setLieuName(FName NewLieuName);
+	
 	UFUNCTION(BlueprintCallable, Category="Fishing")
 	void AttachToCharacter(ACharacter* Character, FName SocketName = "hand_r");
 
