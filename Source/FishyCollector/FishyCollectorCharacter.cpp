@@ -103,6 +103,11 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(ResetPokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ResetPokedex);
 		}
+		if (ClickAction)
+		{
+			EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ClickInteractionManager);
+
+		}
 	}
 	else
 	{
@@ -186,6 +191,14 @@ void AFishyCollectorCharacter::Interact()
 	if (bIsInShopZone)
 	{
 		ToggleShop();
+	}
+}
+void AFishyCollectorCharacter::ClickInteractionManager()
+{
+	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
+	{
+		FishingRod->HandleInput();
+		return; 
 	}
 }
 

@@ -53,13 +53,13 @@ protected:
 	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ClickAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PokedexAction;
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* ResetPokedexAction;
-
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* ShopAction;
 
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
@@ -123,6 +123,9 @@ public:
 	
 	UFUNCTION(BlueprintNativeEvent, Category="Fishing")
 	void DoThrowLine();
+
+	UFUNCTION(BlueprintCallable, Category="Fishing")
+	void ClickInteractionManager();
 
 	FTimerHandle FishBiteTimerHandle;
 
