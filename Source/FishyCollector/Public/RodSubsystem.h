@@ -18,6 +18,7 @@ class FISHYCOLLECTOR_API URodSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 	UPROPERTY()
 	TArray<FPrimaryAssetId> OwnedRods;
@@ -42,5 +43,17 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnOwnedRodsUpdated OnOwnedRodsUpdated;
+
+	UFUNCTION(BlueprintCallable)
+	void SaveMoney();
+
+	UFUNCTION(BlueprintCallable)
+	void LoadMoney();
+
+	UFUNCTION(BlueprintCallable)
+	void SaveRod();
+
+	UFUNCTION(BlueprintCallable)
+	void LoadRod();
 	
 };
