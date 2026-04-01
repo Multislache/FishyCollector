@@ -13,6 +13,7 @@ enum class EPoissonRarete : uint8
 	Commun     UMETA(DisplayName = "Commun"),
 	Rare       UMETA(DisplayName = "Rare"),
 	Legendaire UMETA(DisplayName = "Légendaire"),
+	Secret UMETA(DisplayName = "Secret"),
 };
 
 UCLASS(BlueprintType)

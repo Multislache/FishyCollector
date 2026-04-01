@@ -23,4 +23,7 @@ struct FISHYCOLLECTOR_API FLieuRow : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lieu|Rareté", meta = (ClampMin = "0.0", ClampMax = "100.0"))
 	float ChanceLegendaire = 5.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lieu|Rareté", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float ChanceSecret = 0.f;
 };
