@@ -119,6 +119,10 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(PokedexRotateRightAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterDroite);
 		}
+		if (Echap)
+		{
+			EnhancedInputComponent->BindAction(Echap, ETriggerEvent::Started, this, &AFishyCollectorCharacter::HandleEscape);
+		}
 
 		// IA_Retour – fermer le widget actuellement ouvert (pokédex, shop, inventaire…)
 		if (RetourAction)
@@ -596,3 +600,57 @@ void AFishyCollectorCharacter::RetourGeneral()
 	FermerWidget(PC);
 }
 
+void AFishyCollectorCharacter::HandleEscape()
+{
+	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+	{
+		TogglePauseMenu(); 
+		return;
+	}
+
+	if (bUIWidgetOuvert)
+	{
+		RetourGeneral();
+	}
+	else
+	{
+		TogglePauseMenu();
+	}
+}
+
+void AFishyCollectorCharacter::TogglePauseMenu()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !PauseMenuWidgetClass) return;
+
+	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+	{
+		PauseMenuWidget->RemoveFromParent();
+		UGameplayStatics::SetGamePaused(GetWorld(), false); // Indispensable
+		FermerWidget(PC); 
+	}
+	else
+	{
+		if (!PauseMenuWidget)
+		{
+			PauseMenuWidget = CreateWidget<UUserWidget>(PC, PauseMenuWidgetClass);
+		}
+
+		if (PauseMenuWidget)
+		{
+			OuvrirWidget(PauseMenuWidget, PC);
+			UGameplayStatics::SetGamePaused(GetWorld(), true); // On met en pause APRES avoir ouvert/focus
+		}
+	}
+}
+
+void AFishyCollectorCharacter::OpenCollectionFromMenu()
+{
+	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+	{
+		PauseMenuWidget->RemoveFromParent();
+		UGameplayStatics::SetGamePaused(GetWorld(), false);
+	}
+
+	TogglePokedex();
+}

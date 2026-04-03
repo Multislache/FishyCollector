@@ -61,6 +61,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* ResetPokedexAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* Echap;
+
 	// L1 / Left Shoulder – rotation modèle 3D pokédex
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PokedexRotateLeftAction;
@@ -93,9 +96,7 @@ protected:
 
 	UPROPERTY()
 	UPokedexWidget* PokedexWidget;
-
-	// Popup ouvert par un widget enfant (ex : détail d'un slot d'inventaire).
-	// Renseigné/effacé par Blueprint via SetPopupActif.
+	
 	UPROPERTY(BlueprintReadOnly, Category="UI")
 	UFishyBaseWidget* PopupActif = nullptr;
 	
@@ -106,6 +107,11 @@ public:
 	AFishyCollectorCharacter();	
 
 protected:
+	UFUNCTION(BlueprintCallable)
+	void HandleEscape();
+	void TogglePauseMenu();
+	UFUNCTION(BlueprintCallable)
+	void OpenCollectionFromMenu();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void Move(const FInputActionValue& Value);
@@ -188,6 +194,12 @@ private:
 	void RetourGeneral();
 
 public:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+
+	UPROPERTY()
+	UUserWidget* PauseMenuWidget;
+	
 	void OuvrirWidget(UUserWidget* Widget, APlayerController* PC);
 	void FermerWidget(APlayerController* PC);
 private:
