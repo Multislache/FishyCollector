@@ -9,13 +9,16 @@ AFishyCollectorGameMode::AFishyCollectorGameMode()
 
 EPoissonRarete AFishyCollectorGameMode::TirerRarete(const FLieuRow& Lieu)
 {
-	const float Total = Lieu.ChanceCommun + Lieu.ChanceRare + Lieu.ChanceLegendaire;
+	const float Total = Lieu.ChanceCommun + Lieu.ChanceRare + Lieu.ChanceLegendaire + Lieu.ChanceSecret;
 	const float Roll  = FMath::FRandRange(0.f, Total);
 
-	if (Roll < Lieu.ChanceLegendaire)
+	if (Roll < Lieu.ChanceSecret)
+		return EPoissonRarete::Secret;
+
+	if (Roll < Lieu.ChanceSecret + Lieu.ChanceLegendaire)
 		return EPoissonRarete::Legendaire;
 
-	if (Roll < Lieu.ChanceLegendaire + Lieu.ChanceRare)
+	if (Roll < Lieu.ChanceSecret + Lieu.ChanceLegendaire + Lieu.ChanceRare)
 		return EPoissonRarete::Rare;
 
 	return EPoissonRarete::Commun;
