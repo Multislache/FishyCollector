@@ -135,6 +135,11 @@ void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(InventaireAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleInventaire);
 		}
+
+		if (Map)
+		{
+			EnhancedInputComponent->BindAction(Map, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleMap);
+		}
 	}
 	else
 	{
@@ -409,6 +414,7 @@ UFishyBaseWidget* AFishyCollectorCharacter::GetWidgetOuvert() const
 	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(PokedexWidget);   W && W->IsInViewport()) return W;
 	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(ShopWidget);      W && W->IsInViewport()) return W;
 	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(InventaireWidget);W && W->IsInViewport()) return W;
+	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(MapWidget);       W && W->IsInViewport()) return W;
 	return nullptr;
 }
 
@@ -564,6 +570,13 @@ void AFishyCollectorCharacter::RetourGeneral()
 		}
 	}
 
+	// Ajout pour la Map
+	if (MapWidget && MapWidget->IsInViewport())
+	{
+		ToggleMap();
+		return;
+	}
+
 	// Pokédex : détail → liste, liste → fermer
 	if (PokedexWidget && PokedexWidget->IsInViewport())
 	{
@@ -653,4 +666,29 @@ void AFishyCollectorCharacter::OpenCollectionFromMenu()
 	}
 
 	TogglePokedex();
+}
+
+void AFishyCollectorCharacter::ToggleMap()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !MapWidgetClass) return;
+
+	if (MapWidget && MapWidget->IsInViewport())
+	{
+		MapWidget->RemoveFromParent();
+		FermerWidget(PC);
+	}
+	else
+	{
+		// On crée le widget s'il n'existe pas encore
+		if (!MapWidget)
+		{
+			MapWidget = CreateWidget<UUserWidget>(PC, MapWidgetClass);
+		}
+
+		if (MapWidget)
+		{
+			OuvrirWidget(MapWidget, PC);
+		}
+	}
 }

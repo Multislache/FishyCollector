@@ -64,6 +64,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* Echap;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* Map;
+
 	// L1 / Left Shoulder – rotation modèle 3D pokédex
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PokedexRotateLeftAction;
@@ -102,6 +105,12 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category="Fishing")
 	AFishingRodStorage* NearbyStorage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> MapWidgetClass;
+
+	UPROPERTY()
+	UUserWidget* MapWidget;
 
 public:
 	AFishyCollectorCharacter();	
@@ -192,6 +201,7 @@ private:
 	void PokedexRoterDroite();
 	void ToggleInventaire();
 	void RetourGeneral();
+	void ToggleMap();
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
