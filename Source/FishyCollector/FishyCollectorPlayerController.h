@@ -17,6 +17,11 @@ UCLASS(abstract)
 class AFishyCollectorPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	/** Téléporte le joueur vers une autre map */
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	void TravelToLevel(const FName& LevelName);
 	
 protected:
 

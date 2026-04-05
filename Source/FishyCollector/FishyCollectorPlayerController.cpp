@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "FishyCollector.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 void AFishyCollectorPlayerController::BeginPlay()
@@ -29,6 +30,12 @@ void AFishyCollectorPlayerController::BeginPlay()
 			UE_LOG(LogFishyCollector, Error, TEXT("Could not spawn mobile controls widget."));
 		}
 	}
+}
+
+
+void AFishyCollectorPlayerController::TravelToLevel(const FName& LevelName)
+{
+	UGameplayStatics::OpenLevel(this, LevelName);
 }
 
 void AFishyCollectorPlayerController::SetupInputComponent()
