@@ -9,7 +9,7 @@
 #include "FishyCollector.h"
 #include "Kismet/GameplayStatics.h"
 #include "FishySaveGame.h"
-#include "Kismet/GameplayStatics.h"
+#include "Animation/UMGSequencePlayer.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 static const FString SaveSlot = TEXT("FishySlot");
