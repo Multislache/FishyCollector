@@ -8,7 +8,11 @@
 #include "Blueprint/UserWidget.h"
 #include "FishyCollector.h"
 #include "Kismet/GameplayStatics.h"
+#include "FishySaveGame.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+
+static const FString SaveSlot = TEXT("FishySlot");
 
 void AFishyCollectorPlayerController::BeginPlay()
 {
@@ -63,4 +67,21 @@ void AFishyCollectorPlayerController::SetupInputComponent()
 			}
 		}
 	}
+}
+
+void AFishyCollectorPlayerController::SaveGame(bool bRodPurchased)
+{
+	UFishySaveGame* Save = Cast<UFishySaveGame>(
+		UGameplayStatics::CreateSaveGameObject(UFishySaveGame::StaticClass()));
+	if (!Save) return;
+
+	Save->bRodPurchased = bRodPurchased;
+
+	UGameplayStatics::SaveGameToSlot(Save, SaveSlot, 0);
+}
+
+UFishySaveGame* AFishyCollectorPlayerController::LoadGame()
+{
+	return Cast<UFishySaveGame>(
+		UGameplayStatics::LoadGameFromSlot(SaveSlot, 0));
 }

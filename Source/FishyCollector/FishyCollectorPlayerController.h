@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UFishySaveGame;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -22,7 +23,13 @@ public:
 	/** Téléporte le joueur vers une autre map */
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void TravelToLevel(const FName& LevelName);
-	
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void SaveGame(bool bRodPurchased);
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	UFishySaveGame* LoadGame();
+
 protected:
 
 	/** Input Mapping Contexts */

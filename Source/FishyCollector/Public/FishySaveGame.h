@@ -36,4 +36,7 @@ public:
 
     UPROPERTY(SaveGame)
     TArray<FPrimaryAssetId> OwnedRods;
+
+    UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
+    bool bRodPurchased = false;
 };
