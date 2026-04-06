@@ -66,3 +66,30 @@ UPoissonTemplate* AFishyCollectorGameMode::TirerUnPoisson(FName LieuNom, bool& b
 {
 	return TirerUnPoissonDepuisTable(LieuTable, LieuNom, bSucces);
 }
+
+UPoissonTemplate* AFishyCollectorGameMode::TirerUnPoissonDepuisChances(const FLieuRow& ChancesModifiees, bool& bSucces)
+{
+	bSucces = false;
+
+	const EPoissonRarete RareteCible = TirerRarete(ChancesModifiees);
+
+	TArray<UPoissonTemplate*> Candidats;
+	for (UPoissonTemplate* Poisson : ChancesModifiees.Poissons)
+	{
+		if (Poisson && Poisson->Rarete == RareteCible)
+			Candidats.Add(Poisson);
+	}
+
+	if (Candidats.IsEmpty())
+	{
+		for (UPoissonTemplate* Poisson : ChancesModifiees.Poissons)
+		{
+			if (Poisson) Candidats.Add(Poisson);
+		}
+	}
+
+	if (Candidats.IsEmpty()) return nullptr;
+
+	bSucces = true;
+	return Candidats[FMath::RandRange(0, Candidats.Num() - 1)];
+}

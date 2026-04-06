@@ -383,6 +383,7 @@ void AFishyCollectorCharacter::EquipRodFromData(UFishingRodData* RodData)
 	if (FishingRod)
 	{
 		FishingRod->AttachToCharacter(this);
+		FishingRod->SetRodData(RodData);
 		EquippedFishingRod = RodData;
 	}
 }

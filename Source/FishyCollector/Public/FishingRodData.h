@@ -38,5 +38,19 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod")
 	TSubclassOf<AFishingRod> RodClass;
+
+
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod|Bonus Rareté", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float BonusCommun = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod|Bonus Rareté", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float BonusRare = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod|Bonus Rareté", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float BonusLegendaire = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FishingRod|Bonus Rareté", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float BonusSecret = 0.f;
 	
 };

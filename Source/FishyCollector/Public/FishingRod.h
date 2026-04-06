@@ -20,6 +20,7 @@ enum class EFishingRodState : uint8
 class AFishingHook;
 class ACharacter;
 class UPoissonTemplate;
+class UFishingRodData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFishBite);
 
@@ -75,6 +76,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Fishing")
 	FName CurrentLieuName;
+
+
+	UPROPERTY(BlueprintReadOnly, Category = "Fishing")
+	UFishingRodData* RodData = nullptr;
 	
 public:
 	UFUNCTION(BlueprintCallable, Category="Fishing")
@@ -119,6 +124,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* WrongSurfaceSound;
+
+	
+
+	UFUNCTION(BlueprintCallable, Category = "Fishing")
+	void SetRodData(UFishingRodData* InRodData);
 	
 private:
 	bool CanTransitionTo(EFishingRodState NewState) const;

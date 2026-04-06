@@ -8,6 +8,7 @@
 #include "Components/SceneComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "FishyCollector.h"
+#include "FishingRodData.h"
 #include "Components/WidgetComponent.h"
 #include "FishyCollectorGameMode.h"
 #include "Blueprint/UserWidget.h"
@@ -211,15 +212,44 @@ void AFishingRod::StartWaitingForBite()
 
 void AFishingRod::TriggerFishBite()
 {
-    // 1. On demande au GameMode de choisir un poisson selon le lieu actuel
+    
     AFishyCollectorGameMode* GM = GetWorld()->GetAuthGameMode<AFishyCollectorGameMode>();
     if (GM && !CurrentLieuName.IsNone())
     {
         bool bSucces;
-        // On stocke le poisson choisi dans la canne
-        CurrentFishBiting = GM->TirerUnPoisson(CurrentLieuName, bSucces);
-    }
 
+        // Calcul des chances finales : base du lieu + bonus canne, normalisé à 100%
+        FLieuRow ChancesFinales;
+        if (RodData)
+        {
+            const FLieuRow* LieuBase = GM->LieuTable
+                ? GM->LieuTable->FindRow<FLieuRow>(CurrentLieuName, TEXT("TriggerFishBite"))
+                : nullptr;
+
+            if (LieuBase)
+            {
+                ChancesFinales.ChanceCommun     = LieuBase->ChanceCommun     + RodData->BonusCommun;
+                ChancesFinales.ChanceRare       = LieuBase->ChanceRare       + RodData->BonusRare;
+                ChancesFinales.ChanceLegendaire = LieuBase->ChanceLegendaire + RodData->BonusLegendaire;
+                ChancesFinales.ChanceSecret     = LieuBase->ChanceSecret     + RodData->BonusSecret;
+                ChancesFinales.Poissons         = LieuBase->Poissons;
+
+                // Renormalisation : le total sera recalculé dynamiquement dans TirerRarete
+                // (qui divise par Total), donc pas besoin de clamp manuel ici.
+
+                CurrentFishBiting = AFishyCollectorGameMode::TirerUnPoissonDepuisChances(
+                    ChancesFinales, bSucces);
+            }
+            else
+            {
+                CurrentFishBiting = GM->TirerUnPoisson(CurrentLieuName, bSucces);
+            }
+        }
+        else
+        {
+            CurrentFishBiting = GM->TirerUnPoisson(CurrentLieuName, bSucces);
+        }
+    }
     SetState(EFishingRodState::Morsure);
 
     if (FishingWidgetClass && FishingHook && CurrentFishBiting)
@@ -354,4 +384,9 @@ void AFishingRod::OnHookTimeout()
 void AFishingRod::setLieuName(FName NewLieuName)
 {
     CurrentLieuName = NewLieuName;
+}
+
+void AFishingRod::SetRodData(UFishingRodData* InRodData)
+{
+    RodData = InRodData;
 }

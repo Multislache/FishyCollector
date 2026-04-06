@@ -32,6 +32,9 @@ public:
 	// Version statique : utilisable sans instance GameMode (ex: tests)
 	static UPoissonTemplate* TirerUnPoissonDepuisTable(UDataTable* Table, FName LieuNom, bool& bSucces);
 
+	// Tire un poisson depuis des chances déjà calculées (avec bonus canne appliqués)
+	static UPoissonTemplate* TirerUnPoissonDepuisChances(const FLieuRow& ChancesModifiees, bool& bSucces);
+	
 private:
 	static EPoissonRarete TirerRarete(const FLieuRow& Lieu);
 };
