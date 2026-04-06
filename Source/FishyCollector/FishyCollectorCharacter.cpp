@@ -304,6 +304,8 @@ void AFishyCollectorCharacter::TogglePokedex()
 	}
 	else
 	{
+		if (bUIWidgetOuvert) return;
+
 		if (!PokedexWidgetClass) return;
 
 		if (!PokedexWidget)
@@ -335,6 +337,8 @@ void AFishyCollectorCharacter::ToggleShop()
 	}
 	else
 	{
+		if (bUIWidgetOuvert) return;
+
 		if (!ShopWidget)
 		{
 			ShopWidget = CreateWidget<UUserWidget>(PC, ShopWidgetClass);
@@ -681,6 +685,7 @@ void AFishyCollectorCharacter::ToggleMap()
 	}
 	else
 	{
+		if (bUIWidgetOuvert) return;
 		// On crée le widget s'il n'existe pas encore
 		if (!MapWidget)
 		{
