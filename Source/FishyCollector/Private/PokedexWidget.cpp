@@ -229,8 +229,11 @@ void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche, UBut
 		{
 			FActorSpawnParameters Params;
 			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			TSubclassOf<APokedexViewerActor> ClasseASpawner = ViewerActorClass
+				? ViewerActorClass
+				: TSubclassOf<APokedexViewerActor>(APokedexViewerActor::StaticClass());
 			ViewerActor = GetWorld()->SpawnActor<APokedexViewerActor>(
-				APokedexViewerActor::StaticClass(),
+				ClasseASpawner,
 				FVector(0.f, 0.f, -5000.f),
 				FRotator::ZeroRotator,
 				Params

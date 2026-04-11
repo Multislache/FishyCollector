@@ -81,6 +81,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Pokedex")
 	UDataTable* TableLieux;
 
+	// Classe de l'actor viewer — assigne un Blueprint subclass pour personnaliser la scène
+	UPROPERTY(EditAnywhere, Category = "Pokedex")
+	TSubclassOf<APokedexViewerActor> ViewerActorClass;
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
