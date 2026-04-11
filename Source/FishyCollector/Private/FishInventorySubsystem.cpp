@@ -82,6 +82,13 @@ const TArray<FFishInventoryItem>& UFishInventorySubsystem::GetInventory() const
     return Inventory;
 }
 
+void UFishInventorySubsystem::ClearInventory()
+{
+    Inventory.Empty();
+    OnInventoryUpdated.Broadcast();
+    SaveInventory();
+}
+
 void UFishInventorySubsystem::SaveInventory()
 {
     UFishySaveGame* SaveGame = Cast<UFishySaveGame>(

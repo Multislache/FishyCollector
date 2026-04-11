@@ -28,6 +28,9 @@ public:
     const TArray<FFishInventoryItem>& GetInventory() const;
 
     UFUNCTION(BlueprintCallable)
+    void ClearInventory();
+
+    UFUNCTION(BlueprintCallable)
     void SaveInventory();
 
     UFUNCTION(BlueprintCallable)
