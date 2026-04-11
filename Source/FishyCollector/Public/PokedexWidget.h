@@ -111,7 +111,14 @@ protected:
 
 	// Page Détail
 	UPROPERTY(meta = (BindWidget))
+	class UBorder* Bord;
+
+	UPROPERTY(meta = (BindWidget))
 	UImage* IconePoisson;
+
+	// Rayon des coins arrondis de l'icône
+	UPROPERTY(EditAnywhere, Category = "Pokedex")
+	float RayonArrondissement = 64.f;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* NomText;

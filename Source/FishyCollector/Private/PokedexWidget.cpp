@@ -8,6 +8,7 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
+#include "Components/Border.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
@@ -28,6 +29,13 @@ void UPokedexBoutonHelper::OnClique()
 void UPokedexWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (Bord)
+	{
+		FSlateBrush BrushVide;
+		BrushVide.DrawAs = ESlateBrushDrawType::NoDrawType;
+		Bord->SetBrush(BrushVide);
+	}
 
 	if (BoutonRetour)
 		BoutonRetour->OnClicked.AddDynamic(this, &UPokedexWidget::RetourListe);
@@ -152,6 +160,7 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 		UVerticalBoxSlot* ImgSlot = VBox->AddChildToVerticalBox(Img);
 		ImgSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		ImgSlot->SetHorizontalAlignment(HAlign_Fill);
+		ImgSlot->SetVerticalAlignment(VAlign_Fill);
 
 		// Numéro (position dans l'ordre original)
 		int32 NumeroOriginal = EntreesOriginales.IndexOfByPredicate(
@@ -178,7 +187,7 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 		// Taille fixe via SizeBox
 		USizeBox* SizeBox = WidgetTree->ConstructWidget<USizeBox>();
 		SizeBox->SetWidthOverride(100.f);
-		SizeBox->SetHeightOverride(140.f);
+		SizeBox->SetHeightOverride(180.f);
 		SizeBox->AddChild(Btn);
 
 		int32 Position = Index - 1;
@@ -252,7 +261,9 @@ void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche, UBut
 				FSlateBrush Brush;
 				Brush.SetResourceObject(RT);
 				Brush.ImageSize = FVector2D(512.f, 512.f);
-				Brush.DrawAs = ESlateBrushDrawType::Image;
+				Brush.DrawAs = ESlateBrushDrawType::RoundedBox;
+				Brush.OutlineSettings.CornerRadii = FVector4(RayonArrondissement, RayonArrondissement, RayonArrondissement, RayonArrondissement);
+				Brush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
 				IconePoisson->SetBrush(Brush);
 			}
 		}
@@ -441,7 +452,8 @@ void UPokedexWidget::SetDetailVisible(bool bVisible)
 	bDetailVisible = bVisible;
 	ESlateVisibility DetailVis = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
 
-	if (IconePoisson)        IconePoisson->SetVisibility(DetailVis);
+	if (Bord)            Bord->SetVisibility(DetailVis);
+	if (IconePoisson)    IconePoisson->SetVisibility(DetailVis);
 	if (NomText)             NomText->SetVisibility(DetailVis);
 	if (NomPoisson)          NomPoisson->SetVisibility(DetailVis);
 	if (DescriptionText)     DescriptionText->SetVisibility(DetailVis);
