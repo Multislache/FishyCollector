@@ -145,8 +145,13 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category="Ressource")
 	float Money;
+
 	
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	float MouseSensitivity = 1.0f;
+	
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoMove(float Right, float Forward);
 
