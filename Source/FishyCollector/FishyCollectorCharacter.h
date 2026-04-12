@@ -85,6 +85,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category="UI")
 	TSubclassOf<UPokedexWidget> PokedexWidgetClass;
 
+	// DataTable des lieux – passée au PokedexWidget pour le tri par lieu
+	UPROPERTY(EditDefaultsOnly, Category="Pokedex")
+	UDataTable* TableLieux;
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> ShopWidgetClass;
 

@@ -90,7 +90,12 @@ void UPokedexWidget::TrierParRarete()
 		return (uint8)A.Poisson->Rarete < (uint8)B.Poisson->Rarete;
 	});
 
-	RemplirGrille(Tries);
+	TArray<FName> ClesGroupe;
+	ClesGroupe.Reserve(Tries.Num());
+	for (const FPokedexEntry& Entry : Tries)
+		ClesGroupe.Add(FName(*UEnum::GetValueAsString(Entry.Poisson->Rarete)));
+
+	RemplirGrille(Tries, ClesGroupe);
 	MettreAJourBoutonsTri();
 }
 
@@ -98,13 +103,34 @@ void UPokedexWidget::TrierParLieu()
 {
 	TriActuel = ETriPokedex::Lieu;
 
-	TArray<FPokedexEntry> Tries = EntreesOriginales;
-	Tries.Sort([this](const FPokedexEntry& A, const FPokedexEntry& B)
+	// Construire l'index de position de chaque lieu dans la DataTable (pour respecter l'ordre défini)
+	TMap<FName, int32> OrdreLieux;
+	if (TableLieux)
 	{
-		return TrouverLieu(A.Poisson).LexicalLess(TrouverLieu(B.Poisson));
+		const TArray<FName>& RowNames = TableLieux->GetRowNames();
+		for (int32 i = 0; i < RowNames.Num(); i++)
+			OrdreLieux.Add(RowNames[i], i);
+	}
+
+	TArray<FPokedexEntry> Tries = EntreesOriginales;
+	Tries.Sort([this, &OrdreLieux](const FPokedexEntry& A, const FPokedexEntry& B)
+	{
+		const FName LieuA = TrouverLieu(A.Poisson);
+		const FName LieuB = TrouverLieu(B.Poisson);
+		// Non assignés toujours à la fin
+		if (LieuA == NAME_None && LieuB != NAME_None) return false;
+		if (LieuA != NAME_None && LieuB == NAME_None) return true;
+		if (LieuA == LieuB) return false;
+		return OrdreLieux.FindRef(LieuA) < OrdreLieux.FindRef(LieuB);
 	});
 
-	RemplirGrille(Tries);
+	// Calculer la clé de groupe (lieu) pour chaque entrée triée
+	TArray<FName> ClesGroupe;
+	ClesGroupe.Reserve(Tries.Num());
+	for (const FPokedexEntry& Entry : Tries)
+		ClesGroupe.Add(TrouverLieu(Entry.Poisson));
+
+	RemplirGrille(Tries, ClesGroupe);
 	MettreAJourBoutonsTri();
 }
 
@@ -129,11 +155,12 @@ static FLinearColor CouleurRarete(EPoissonRarete Rarete)
 	{
 	case EPoissonRarete::Rare:       return FLinearColor(0.25f, 0.45f, 0.75f);   // bleu
 	case EPoissonRarete::Legendaire: return FLinearColor(0.75f, 0.55f, 0.05f);  // or foncé
+	case EPoissonRarete::Secret:     return FLinearColor(0.45f, 0.10f, 0.65f);  // violet
 	default:                         return FLinearColor(0.45f, 0.45f, 0.45f);  // gris foncé
 	}
 }
 
-void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
+void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees, const TArray<FName>& ClesGroupe)
 {
 	if (!ListePoissons) return;
 
@@ -144,8 +171,17 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 	PremierBouton = nullptr;
 
 	int32 Index = 1;
+	int32 Ligne   = 0;
+	int32 Colonne = 0;
 	for (const FPokedexEntry& Entry : Entrees)
 	{
+		// Nouveau groupe de lieu : forcer un retour à la ligne si on n'est pas déjà en début de ligne
+		const bool bGroupeActif = ClesGroupe.IsValidIndex(Index - 1);
+		if (bGroupeActif && Index > 1 && Colonne != 0 && ClesGroupe[Index - 1] != ClesGroupe[Index - 2])
+		{
+			Ligne++;
+			Colonne = 0;
+		}
 		UButton* Btn = WidgetTree->ConstructWidget<UButton>();
 
 		// Brush arrondi pour tous les états du bouton
@@ -212,13 +248,19 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 		SizeBox->SetHeightOverride(180.f);
 		SizeBox->AddChild(Btn);
 
-		int32 Position = Index - 1;
 		UUniformGridSlot* GridSlot = Cast<UUniformGridSlot>(
-			ListePoissons->AddChildToUniformGrid(SizeBox, Position / 4, Position % 4));
+			ListePoissons->AddChildToUniformGrid(SizeBox, Ligne, Colonne));
 		if (GridSlot)
 		{
 			GridSlot->SetHorizontalAlignment(HAlign_Fill);
 			GridSlot->SetVerticalAlignment(VAlign_Fill);
+		}
+
+		Colonne++;
+		if (Colonne >= 4)
+		{
+			Colonne = 0;
+			Ligne++;
 		}
 		Index++;
 	}

@@ -153,7 +153,7 @@ private:
 	UFUNCTION()
 	void TrierParLieu();
 
-	void RemplirGrille(const TArray<FPokedexEntry>& Entrees);
+	void RemplirGrille(const TArray<FPokedexEntry>& Entrees, const TArray<FName>& ClesGroupe = TArray<FName>());
 	void SetDetailVisible(bool bVisible);
 	void SurlignerBouton(UButton* Bouton, bool bSurligne);
 	void MettreAJourBoutonsTri();
