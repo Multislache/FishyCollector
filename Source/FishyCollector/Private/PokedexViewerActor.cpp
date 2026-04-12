@@ -77,6 +77,7 @@ APokedexViewerActor::APokedexViewerActor()
 void APokedexViewerActor::SetMesh(UStaticMesh* InMesh, UMaterialInterface* InMaterial, bool bDecouvert)
 {
 	MeshComp->SetStaticMesh(InMesh);
+	MeshComp->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 
 	if (InMesh && InMaterial)
 	{

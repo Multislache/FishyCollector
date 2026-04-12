@@ -127,9 +127,9 @@ static FLinearColor CouleurRarete(EPoissonRarete Rarete)
 {
 	switch (Rarete)
 	{
-	case EPoissonRarete::Rare:       return FLinearColor(0.55f, 0.75f, 1.0f);   // bleu clair
-	case EPoissonRarete::Legendaire: return FLinearColor(1.0f,  0.85f, 0.25f);  // or
-	default:                         return FLinearColor(0.88f, 0.88f, 0.88f);  // gris (Commun)
+	case EPoissonRarete::Rare:       return FLinearColor(0.25f, 0.45f, 0.75f);   // bleu
+	case EPoissonRarete::Legendaire: return FLinearColor(0.75f, 0.55f, 0.05f);  // or foncé
+	default:                         return FLinearColor(0.45f, 0.45f, 0.45f);  // gris foncé
 	}
 }
 
@@ -138,6 +138,7 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 	if (!ListePoissons) return;
 
 	ListePoissons->ClearChildren();
+	ListePoissons->SetSlotPadding(FMargin(4.f));
 	Helpers.Empty();
 	BoutonActif = nullptr;
 	PremierBouton = nullptr;
@@ -146,7 +147,23 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 	for (const FPokedexEntry& Entry : Entrees)
 	{
 		UButton* Btn = WidgetTree->ConstructWidget<UButton>();
-		Btn->SetBackgroundColor(CouleurRarete(Entry.Poisson->Rarete));
+
+		// Brush arrondi pour tous les états du bouton
+		auto MakeBrush = [this](FLinearColor Couleur) -> FSlateBrush
+		{
+			FSlateBrush B;
+			B.DrawAs = ESlateBrushDrawType::RoundedBox;
+			B.OutlineSettings.CornerRadii = FVector4(RayonCarte, RayonCarte, RayonCarte, RayonCarte);
+			B.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+			B.TintColor = FSlateColor(Couleur);
+			return B;
+		};
+		FLinearColor C = CouleurRarete(Entry.Poisson->Rarete);
+		FButtonStyle Style = Btn->GetStyle();
+		Style.Normal  = MakeBrush(C);
+		Style.Hovered = MakeBrush(C * 1.2f);
+		Style.Pressed = MakeBrush(C * 0.7f);
+		Btn->SetStyle(Style);
 
 		// VerticalBox : image en haut, numéro en bas
 		UVerticalBox* VBox = WidgetTree->ConstructWidget<UVerticalBox>();
@@ -155,12 +172,17 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees)
 		// Icone (noire si non découvert)
 		UImage* Img = WidgetTree->ConstructWidget<UImage>();
 		if (Entry.Poisson->Icone)
-			Img->SetBrushFromTexture(Entry.Poisson->Icone);
+		{
+			FSlateBrush ImgBrush;
+			ImgBrush.SetResourceObject(Entry.Poisson->Icone);
+			ImgBrush.ImageSize = FVector2D(90.f, 90.f);
+			Img->SetBrush(ImgBrush);
+		}
 		Img->SetColorAndOpacity(Entry.bPeche ? FLinearColor::White : FLinearColor::Black);
 		UVerticalBoxSlot* ImgSlot = VBox->AddChildToVerticalBox(Img);
-		ImgSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		ImgSlot->SetHorizontalAlignment(HAlign_Fill);
-		ImgSlot->SetVerticalAlignment(VAlign_Fill);
+		ImgSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+		ImgSlot->SetHorizontalAlignment(HAlign_Center);
+		ImgSlot->SetVerticalAlignment(VAlign_Center);
 
 		// Numéro (position dans l'ordre original)
 		int32 NumeroOriginal = EntreesOriginales.IndexOfByPredicate(
@@ -296,10 +318,17 @@ void UPokedexWidget::SurlignerBouton(UButton* Bouton, bool bSurligne)
 		if (H && H->Bouton == Bouton && H->Poisson)
 		{
 			FLinearColor Couleur = CouleurRarete(H->Poisson->Rarete);
-			// Sélectionné : assombrir la couleur de rareté (×0.5)
 			if (bSurligne)
 				Couleur = FLinearColor(Couleur.R * 0.5f, Couleur.G * 0.5f, Couleur.B * 0.5f, 1.0f);
-			Bouton->SetBackgroundColor(Couleur);
+
+			FSlateBrush B;
+			B.DrawAs = ESlateBrushDrawType::RoundedBox;
+			B.OutlineSettings.CornerRadii = FVector4(RayonCarte, RayonCarte, RayonCarte, RayonCarte);
+			B.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+			B.TintColor = FSlateColor(Couleur);
+			FButtonStyle Style = Bouton->GetStyle();
+			Style.Normal = B;
+			Bouton->SetStyle(Style);
 			return;
 		}
 	}

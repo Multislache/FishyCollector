@@ -116,9 +116,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UImage* IconePoisson;
 
-	// Rayon des coins arrondis de l'icône
+	// Rayon des coins arrondis de l'icône 3D
 	UPROPERTY(EditAnywhere, Category = "Pokedex")
 	float RayonArrondissement = 64.f;
+
+	// Rayon des coins arrondis des cartes de la grille
+	UPROPERTY(EditAnywhere, Category = "Pokedex")
+	float RayonCarte = 12.f;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* NomText;
