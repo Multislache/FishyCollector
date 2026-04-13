@@ -138,6 +138,7 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
         if (RodSound) UGameplayStatics::PlaySoundAtLocation(this, RodSound, GetActorLocation());
 
         {
+            OwnerCharacter->PlayAnimMontage(ThrowRodMontage);
             FVector ForwardDirection = LaunchDirection.IsNearlyZero() ? OwnerCharacter->GetActorForwardVector() : LaunchDirection;
             FVector TraceStart = OwnerCharacter->GetActorLocation() + ForwardDirection * 500.f + FVector(0.f, 0.f, 500.f);
             FVector TraceEnd = TraceStart + FVector(0.f, 0.f, -2000.f);

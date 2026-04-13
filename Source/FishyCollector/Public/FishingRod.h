@@ -116,6 +116,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FishBiteSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+	UAnimMontage* ThrowRodMontage;
+
 	UFUNCTION(BlueprintCallable, Category = "Fishing")
 	void EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish);
 
@@ -124,8 +127,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* WrongSurfaceSound;
-
-	
 
 	UFUNCTION(BlueprintCallable, Category = "Fishing")
 	void SetRodData(UFishingRodData* InRodData);
