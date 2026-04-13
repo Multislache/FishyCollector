@@ -70,6 +70,7 @@ public:
 	virtual void InitialiserFocusGamepad_Implementation() override;
 	virtual void NaviguerGauche_Implementation() override;
 	virtual void NaviguerDroite_Implementation() override;
+	virtual void ScrollerVersFocus() override;
 
 	void FocuserPremierBouton();
 
@@ -88,6 +89,7 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -156,6 +158,7 @@ private:
 	void RemplirGrille(const TArray<FPokedexEntry>& Entrees, const TArray<FName>& ClesGroupe = TArray<FName>());
 	void SetDetailVisible(bool bVisible);
 	void SurlignerBouton(UButton* Bouton, bool bSurligne);
+	void SurlignerFocusNavigation(UButton* NouveauFocus);
 	void MettreAJourBoutonsTri();
 	FName TrouverLieu(UPoissonTemplate* Poisson) const;
 
@@ -171,6 +174,10 @@ private:
 
 	UPROPERTY()
 	UButton* BoutonActif = nullptr;
+
+	// Bouton actuellement sous le curseur de navigation (gamepad, sans avoir appuyé)
+	UPROPERTY()
+	UButton* BoutonEnFocus = nullptr;
 
 	// Premier bouton de la grille – sert de point d'entrée pour la navigation gamepad
 	UPROPERTY()

@@ -122,6 +122,7 @@ public:
 protected:
 	UFUNCTION(BlueprintCallable)
 	void HandleEscape();
+	UFUNCTION(BlueprintCallable)
 	void TogglePauseMenu();
 	UFUNCTION(BlueprintCallable)
 	void OpenCollectionFromMenu();
@@ -201,6 +202,11 @@ public:
 
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+public:
+	// Appelé par FishyBaseWidget quand le jeu est en pause (Enhanced Input ne fire pas)
+	UFUNCTION(BlueprintCallable, Category="UI")
+	void RetourGeneral();
+
 private:
 	void Interact();
 	void TogglePokedex();
@@ -209,7 +215,6 @@ private:
 	void PokedexRoterGauche();
 	void PokedexRoterDroite();
 	void ToggleInventaire();
-	void RetourGeneral();
 	void ToggleMap();
 
 public:
@@ -237,8 +242,13 @@ private:
 	// Navigation joystick → grid (injection D-pad dans Slate)
 	void NaviguerUI(float X, float Y);
 
-	// Clic sur le bouton en focus (IA_InteractAction quand UI ouverte)
+public:
+	// Clic sur le bouton en focus — vérifie le popup avant d'injecter Enter.
+	// Appelé par FishyBaseWidget pour la sélection gamepad (jeu en pause ou pas).
+	UFUNCTION(BlueprintCallable, Category="UI")
 	void AccepterUI();
+
+private:
 
 	// true quand un widget UI est visible – bloque mouvement, caméra et saut
 	bool bUIWidgetOuvert = false;

@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "FishyBaseWidget.generated.h"
 
+class UPanelWidget;
+
 /**
  * Classe de base pour tous les widgets du jeu.
  * Expose InitialiserFocusGamepad() que chaque Blueprint implémente
@@ -71,12 +73,36 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gamepad")
 	void InjecterToucheAccepter();
 
+	// Fait scroller la ScrollBox du widget pour garder le focus visible
+	virtual void ScrollerVersFocus() {}
+
+	/**
+	 * Trouve le premier widget focusable (Button…) dans un panel, même imbriqué.
+	 * Utile dans InitialiserFocusGamepad quand les enfants sont dans des containers.
+	 * Appeler SetUserFocus sur le résultat.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gamepad")
+	UWidget* TrouverPremierFocusable(UPanelWidget* Panel) const;
+
+	/**
+	 * Mettre à true pour les widgets sans character (menu principal) :
+	 * les boutons Retour et Sélection sont alors gérés
+	 * directement par le widget sans passer par le character.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Gamepad")
+	bool bGererInputDirectement = false;
+
+
 protected:
 	virtual void NativeConstruct() override;
 
 	// Bloque Gamepad_FaceButton_Bottom avant qu'il atteigne les boutons enfants.
 	// Seul AccepterUI() (qui injecte Enter) peut valider un bouton en focus.
+	// Désactivé si bGererInputDirectement = true (menu principal sans character).
 	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
+	// Gère Retour et FaceButton_Bottom directement quand bGererInputDirectement = true.
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 private:
 	// Wrapper UFUNCTION pour le timer (BlueprintNativeEvent ne peut pas être callback direct)

@@ -168,6 +168,7 @@ void UPokedexWidget::RemplirGrille(const TArray<FPokedexEntry>& Entrees, const T
 	ListePoissons->SetSlotPadding(FMargin(4.f));
 	Helpers.Empty();
 	BoutonActif = nullptr;
+	BoutonEnFocus = nullptr;
 	PremierBouton = nullptr;
 
 	int32 Index = 1;
@@ -333,6 +334,9 @@ void UPokedexWidget::AfficherDetail(UPoissonTemplate* Poisson, bool bPeche, UBut
 		}
 	}
 
+	// Retirer le curseur de navigation avant d'entrer dans le détail
+	SurlignerFocusNavigation(nullptr);
+
 	// Curseur de sélection : reset l'ancien, assombrit le nouveau
 	SurlignerBouton(BoutonActif, false);
 	BoutonActif = BoutonSource;
@@ -367,6 +371,8 @@ void UPokedexWidget::SurlignerBouton(UButton* Bouton, bool bSurligne)
 			B.DrawAs = ESlateBrushDrawType::RoundedBox;
 			B.OutlineSettings.CornerRadii = FVector4(RayonCarte, RayonCarte, RayonCarte, RayonCarte);
 			B.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+			B.OutlineSettings.Color = bSurligne ? FLinearColor(0.1f, 0.55f, 1.0f, 1.0f) : FLinearColor::Transparent;
+			B.OutlineSettings.Width = bSurligne ? 4.f : 0.f;
 			B.TintColor = FSlateColor(Couleur);
 			FButtonStyle Style = Bouton->GetStyle();
 			Style.Normal = B;
@@ -516,6 +522,84 @@ void UPokedexWidget::RoterModele(float DeltaYaw)
 {
 	if (ViewerActor && bDetailVisible)
 		ViewerActor->AjouterRotationYaw(DeltaYaw);
+}
+
+void UPokedexWidget::SurlignerFocusNavigation(UButton* NouveauFocus)
+{
+	// Retirer le highlight de l'ancien bouton en focus
+	if (BoutonEnFocus && BoutonEnFocus != NouveauFocus)
+	{
+		for (UPokedexBoutonHelper* H : Helpers)
+		{
+			if (!H || H->Bouton != BoutonEnFocus || !H->Poisson) continue;
+			FLinearColor C = CouleurRarete(H->Poisson->Rarete);
+			FSlateBrush B;
+			B.DrawAs = ESlateBrushDrawType::RoundedBox;
+			B.OutlineSettings.CornerRadii = FVector4(RayonCarte, RayonCarte, RayonCarte, RayonCarte);
+			B.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+			B.OutlineSettings.Color = FLinearColor::Transparent;
+			B.OutlineSettings.Width = 0.f;
+			B.TintColor = FSlateColor(C);
+			FButtonStyle Style = BoutonEnFocus->GetStyle();
+			Style.Normal = B;
+			BoutonEnFocus->SetStyle(Style);
+			break;
+		}
+	}
+
+	BoutonEnFocus = NouveauFocus;
+
+	// Appliquer le highlight bleu vif sur le nouveau bouton en focus
+	if (BoutonEnFocus)
+	{
+		for (UPokedexBoutonHelper* H : Helpers)
+		{
+			if (!H || H->Bouton != BoutonEnFocus || !H->Poisson) continue;
+			FLinearColor C = CouleurRarete(H->Poisson->Rarete);
+			FSlateBrush B;
+			B.DrawAs = ESlateBrushDrawType::RoundedBox;
+			B.OutlineSettings.CornerRadii = FVector4(RayonCarte, RayonCarte, RayonCarte, RayonCarte);
+			B.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+			B.OutlineSettings.Color = FLinearColor(0.1f, 0.65f, 1.0f, 1.0f);
+			B.OutlineSettings.Width = 4.f;
+			B.TintColor = FSlateColor(C);
+			FButtonStyle Style = BoutonEnFocus->GetStyle();
+			Style.Normal = B;
+			BoutonEnFocus->SetStyle(Style);
+			break;
+		}
+	}
+}
+
+void UPokedexWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (bDetailVisible) return;
+
+	// Trouver quel bouton a le focus gamepad cette frame
+	UButton* NouveauFocus = nullptr;
+	for (UPokedexBoutonHelper* H : Helpers)
+	{
+		if (H && H->Bouton && H->Bouton->HasAnyUserFocus())
+		{
+			NouveauFocus = H->Bouton;
+			break;
+		}
+	}
+
+	// Mettre à jour le highlight et le scroll seulement si le focus a changé
+	if (NouveauFocus != BoutonEnFocus)
+	{
+		SurlignerFocusNavigation(NouveauFocus);
+		if (ScrollListe && NouveauFocus)
+			ScrollListe->ScrollWidgetIntoView(NouveauFocus, true);
+	}
+}
+
+void UPokedexWidget::ScrollerVersFocus()
+{
+	// Géré par NativeTick — rien à faire ici
 }
 
 void UPokedexWidget::SetDetailVisible(bool bVisible)

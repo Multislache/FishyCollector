@@ -429,7 +429,8 @@ UFishyBaseWidget* AFishyCollectorCharacter::GetWidgetOuvert() const
 	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(PokedexWidget);   W && W->IsInViewport()) return W;
 	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(ShopWidget);      W && W->IsInViewport()) return W;
 	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(InventaireWidget);W && W->IsInViewport()) return W;
-	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(MapWidget);       W && W->IsInViewport()) return W;
+	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(MapWidget);        W && W->IsInViewport()) return W;
+	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(PauseMenuWidget); W && W->IsInViewport()) return W;
 	return nullptr;
 }
 
@@ -484,7 +485,7 @@ void AFishyCollectorCharacter::NaviguerUI(float X, float Y)
 	// Popup ouvert → ne pas naviguer dans le widget parent derrière
 	if (PopupActif && PopupActif->IsInViewport()) return;
 
-	constexpr float Seuil = 0.5f;
+	constexpr float Seuil = 0.85f;
 
 	// Joystick au centre → reset debounce pour réactivité immédiate au prochain push
 	if (FMath::Abs(X) < Seuil && FMath::Abs(Y) < Seuil)
@@ -494,7 +495,7 @@ void AFishyCollectorCharacter::NaviguerUI(float X, float Y)
 	}
 
 	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
-	constexpr float Debounce = 0.18f;
+	constexpr float Debounce = 0.35f;
 	if (Now - DernierNavigationUI < Debounce) return;
 	DernierNavigationUI = Now;
 
@@ -509,6 +510,10 @@ void AFishyCollectorCharacter::NaviguerUI(float X, float Y)
 	FKeyEvent Up  (NavKey, FModifierKeysState(), 0, false, 0, 0);
 	FSlateApplication::Get().ProcessKeyDownEvent(Down);
 	FSlateApplication::Get().ProcessKeyUpEvent(Up);
+
+	// Faire scroller la ScrollBox pour garder l'élément focusé visible
+	if (UFishyBaseWidget* W = GetWidgetOuvert())
+		W->ScrollerVersFocus();
 }
 
 void AFishyCollectorCharacter::AccepterUI()
@@ -537,13 +542,24 @@ void AFishyCollectorCharacter::OuvrirWidget(UUserWidget* Widget, APlayerControll
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
 
-	if (!Cast<UFishyBaseWidget>(Widget))
-		Widget->SetUserFocus(PC);
+	Widget->SetUserFocus(PC);
 }
 
 void AFishyCollectorCharacter::FermerWidget(APlayerController* PC)
 {
 	if (!PC) return;
+
+	// Ne réinitialiser l'input que si aucun autre widget n'est encore visible.
+	// Sans ce check, fermer un widget alors qu'un autre est ouvert déverrouillerait
+	// le mouvement du joueur (ResetIgnoreMoveInput remet le compteur à 0).
+	const bool bAutreWidgetOuvert =
+		(PokedexWidget    && PokedexWidget->IsInViewport())    ||
+		(ShopWidget       && ShopWidget->IsInViewport())       ||
+		(InventaireWidget && InventaireWidget->IsInViewport()) ||
+		(MapWidget        && MapWidget->IsInViewport())        ||
+		(PauseMenuWidget  && PauseMenuWidget->IsInViewport());
+
+	if (bAutreWidgetOuvert) return;
 
 	bUIWidgetOuvert = false;
 	PC->SetInputMode(FInputModeGameOnly());
@@ -583,6 +599,13 @@ void AFishyCollectorCharacter::RetourGeneral()
 			}
 			return;
 		}
+	}
+
+	// Pause
+	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+	{
+		TogglePauseMenu();
+		return;
 	}
 
 	// Ajout pour la Map
