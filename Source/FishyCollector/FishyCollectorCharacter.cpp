@@ -23,678 +23,481 @@
 
 void AFishyCollectorCharacter::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	if (FishingRodClass)
-	{
-		FishingRod = GetWorld()->SpawnActor<AFishingRod>(FishingRodClass);
-		if (FishingRod)
-		{
-			FishingRod->AttachToCharacter(this);
-		}
-	}
+    if (FishingRodClass)
+    {
+       FishingRod = GetWorld()->SpawnActor<AFishingRod>(FishingRodClass);
+       if (FishingRod)
+       {
+          FishingRod->AttachToCharacter(this);
+       }
+    }
 }
 
 AFishyCollectorCharacter::AFishyCollectorCharacter()
 {
-	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
-	// Don't rotate when the controller rotates. Let that just affect the camera.
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+    GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+       
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationYaw = false;
+    bUseControllerRotationRoll = false;
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
-	GetCharacterMovement()->JumpZVelocity = 500.f;
-	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
+    GetCharacterMovement()->JumpZVelocity = 500.f;
+    GetCharacterMovement()->AirControl = 0.35f;
+    GetCharacterMovement()->MaxWalkSpeed = 500.f;
+    GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
+    GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+    GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f;
-	CameraBoom->bUsePawnControlRotation = true;
+    CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+    CameraBoom->SetupAttachment(RootComponent);
+    CameraBoom->TargetArmLength = 400.0f;
+    CameraBoom->bUsePawnControlRotation = true;
 
-	// Create a follow camera
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->bUsePawnControlRotation = false;
-
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+    FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+    FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+    FollowCamera->bUsePawnControlRotation = false;
 }
 
 void AFishyCollectorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Jumping – bloqué si le pokédex est ouvert
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::JumpSiPokedexFerme);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+    
+    if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
+       
+       EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::JumpSiPokedexFerme);
+       EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
+       EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Move);
+       EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
+       EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
 
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::Look);
+       if (InteractAction)
+          EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::Interact);
 
-		if (InteractAction)
-		{
-			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::Interact);
-		}
+       if (PokedexAction)
+          EnhancedInputComponent->BindAction(PokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::TogglePokedex);
 
-		if (PokedexAction)
-		{
-			EnhancedInputComponent->BindAction(PokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::TogglePokedex);
-		}
+       if (ResetPokedexAction)
+          EnhancedInputComponent->BindAction(ResetPokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ResetPokedex);
+       
+       if (ClickAction)
+          EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ClickInteractionManager);
 
-		if (ResetPokedexAction)
-		{
-			EnhancedInputComponent->BindAction(ResetPokedexAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ResetPokedex);
-		}
-		if (ClickAction)
-		{
-			EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ClickInteractionManager);
-		}
+       if (PokedexRotateLeftAction)
+          EnhancedInputComponent->BindAction(PokedexRotateLeftAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterGauche);
+       
+       if (PokedexRotateRightAction)
+          EnhancedInputComponent->BindAction(PokedexRotateRightAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterDroite);
+       
+       if (Echap)
+          EnhancedInputComponent->BindAction(Echap, ETriggerEvent::Started, this, &AFishyCollectorCharacter::HandleEscape);
 
-		// Rotation du modèle 3D pokédex via L1/R1
-		if (PokedexRotateLeftAction)
-		{
-			EnhancedInputComponent->BindAction(PokedexRotateLeftAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterGauche);
-		}
-		if (PokedexRotateRightAction)
-		{
-			EnhancedInputComponent->BindAction(PokedexRotateRightAction, ETriggerEvent::Triggered, this, &AFishyCollectorCharacter::PokedexRoterDroite);
-		}
-		if (Echap)
-		{
-			EnhancedInputComponent->BindAction(Echap, ETriggerEvent::Started, this, &AFishyCollectorCharacter::HandleEscape);
-		}
+       if (RetourAction)
+          EnhancedInputComponent->BindAction(RetourAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::RetourGeneral);
 
-		// IA_Retour – fermer le widget actuellement ouvert (pokédex, shop, inventaire…)
-		if (RetourAction)
-		{
-			EnhancedInputComponent->BindAction(RetourAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::RetourGeneral);
-		}
+       if (InventaireAction)
+          EnhancedInputComponent->BindAction(InventaireAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleInventaire);
 
-		// I / bouton manette – inventaire
-		if (InventaireAction)
-		{
-			EnhancedInputComponent->BindAction(InventaireAction, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleInventaire);
-		}
+       if (Map)
+          EnhancedInputComponent->BindAction(Map, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleMap);
+    }
+}
 
-		if (Map)
-		{
-			EnhancedInputComponent->BindAction(Map, ETriggerEvent::Started, this, &AFishyCollectorCharacter::ToggleMap);
-		}
-	}
-	else
-	{
-		UE_LOG(LogFishyCollector, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
-	}
+// --- LOGIQUE QTE SECURISÉE ---
+void AFishyCollectorCharacter::ProcessFishingInput()
+{
+    if (!FishingRod || FishingRod->GetCurrentState() != EFishingRodState::Morsure)
+        return;
+
+    float CurrentTime = GetWorld()->GetTimeSeconds();
+
+    // Empêche le double-clic instantané (E + Clic)
+    if (CurrentTime - LastQTEInputTime >= QTEInputCooldown)
+    {
+        LastQTEInputTime = CurrentTime;
+        FishingRod->HandleInput();
+    }
 }
 
 void AFishyCollectorCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	// route the input
-	DoMove(MovementVector.X, MovementVector.Y);
+    FVector2D MovementVector = Value.Get<FVector2D>();
+    DoMove(MovementVector.X, MovementVector.Y);
 }
 
 void AFishyCollectorCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	// route the input
-	DoLook(LookAxisVector.X, LookAxisVector.Y);
+    FVector2D LookAxisVector = Value.Get<FVector2D>();
+    DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
 void AFishyCollectorCharacter::DoMove(float Right, float Forward)
 {
-	// Quand un widget UI est ouvert, le joystick navigue dans la grille
-	if (bUIWidgetOuvert)
-	{
-		NaviguerUI(Right, Forward);
-		return;
-	}
+    if (bUIWidgetOuvert)
+    {
+       NaviguerUI(Right, Forward);
+       return;
+    }
 
-	if (GetController() != nullptr)
-	{
-		// find out which way is forward
-		const FRotator Rotation = GetController()->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+    if (GetController() != nullptr)
+    {
+       const FRotator Rotation = GetController()->GetControlRotation();
+       const FRotator YawRotation(0, Rotation.Yaw, 0);
+       const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+       const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-		// get right vector
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement
-		AddMovementInput(ForwardDirection, Forward);
-		AddMovementInput(RightDirection, Right);
-	}
+       AddMovementInput(ForwardDirection, Forward);
+       AddMovementInput(RightDirection, Right);
+    }
 }
 
 void AFishyCollectorCharacter::DoLook(float Yaw, float Pitch)
 {
-	if (GetController() != nullptr)
-	{
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
-	}
-}
-
-void AFishyCollectorCharacter::DoJumpStart()
-{
-	Jump();
-}
-
-void AFishyCollectorCharacter::DoJumpEnd()
-{
-	StopJumping();
+    if (GetController() != nullptr)
+    {
+       AddControllerYawInput(Yaw * MouseSensitivity);
+       AddControllerPitchInput(Pitch * MouseSensitivity);
+    }
 }
 
 void AFishyCollectorCharacter::Interact()
 {
-	// Quand un widget UI est ouvert, cliquer le bouton en focus
-	if (bUIWidgetOuvert)
-	{
-		AccepterUI();
-		return;
-	}
+    if (bUIWidgetOuvert)
+    {
+       AccepterUI();
+       return;
+    }
 
-	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
-	{
-		FishingRod->HandleInput();
-		return;
-	}
-	if (NearbyStorage)
-	{
-		NearbyStorage->OpenStorage(this);
-		return;
-	}
-	if (bIsInFishingZone && FishingRod)
-	{
-		DoThrowLine();
-	}
-	if (bIsInShopZone)
-	{
-		ToggleShop();
-	}
+    // Gestion du QTE via la fonction sécurisée
+    if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
+    {
+       ProcessFishingInput();
+       return;
+    }
+
+    if (NearbyStorage)
+    {
+       NearbyStorage->OpenStorage(this);
+       return;
+    }
+    if (bIsInFishingZone && FishingRod)
+    {
+       DoThrowLine();
+    }
+    if (bIsInShopZone)
+    {
+       ToggleShop();
+    }
 }
+
 void AFishyCollectorCharacter::ClickInteractionManager()
 {
-	if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
-	{
-		FishingRod->HandleInput();
-		return; 
-	}
+    // Gestion du QTE via la fonction sécurisée
+    if (FishingRod && FishingRod->GetCurrentState() == EFishingRodState::Morsure)
+    {
+       ProcessFishingInput();
+       return; 
+    }
 }
 
 void AFishyCollectorCharacter::DoThrowLine_Implementation()
 {
-	if (!FishingRod) return;
+    if (!FishingRod) return;
 
-	if (FishingRod->GetCurrentState() == EFishingRodState::Repos)
-	{
-		FVector LaunchDirection = FVector::ForwardVector;
-		if (AController* C = GetController())
-		{
-			FRotator YawOnly = FRotator(0.f, C->GetControlRotation().Yaw, 0.f);
-			LaunchDirection = FRotationMatrix(YawOnly).GetUnitAxis(EAxis::X);
-		}
-		FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
-	}
-	else
-	{
-		FishingRod->SetState(EFishingRodState::Repos);
-	}
+    if (FishingRod->GetCurrentState() == EFishingRodState::Repos)
+    {
+       FVector LaunchDirection = FVector::ForwardVector;
+       if (AController* C = GetController())
+       {
+          FRotator YawOnly = FRotator(0.f, C->GetControlRotation().Yaw, 0.f);
+          LaunchDirection = FRotationMatrix(YawOnly).GetUnitAxis(EAxis::X);
+       }
+       FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
+    }
+    else
+    {
+       FishingRod->SetState(EFishingRodState::Repos);
+    }
 }
 
-void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive)
-{
-	bIsInFishingZone = bActive;
-}
-
-void AFishyCollectorCharacter::SetShopZoneActive(bool bActive)
-{
-	bIsInShopZone = bActive;
-}
+void AFishyCollectorCharacter::SetFishingZoneActive(bool bActive) { bIsInFishingZone = bActive; }
+void AFishyCollectorCharacter::SetShopZoneActive(bool bActive) { bIsInShopZone = bActive; }
 
 void AFishyCollectorCharacter::ResetPokedex()
 {
-	UGameInstance* GI = GetGameInstance();
-	if (!GI) return;
-
-	UPokedexManager* Manager = GI->GetSubsystem<UPokedexManager>();
-	if (Manager)
-	{
-		Manager->ResetPokedex();
-	}
+    if (UPokedexManager* Manager = GetGameInstance()->GetSubsystem<UPokedexManager>())
+       Manager->ResetPokedex();
 }
-
-
 
 void AFishyCollectorCharacter::TogglePokedex()
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return;
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC) return;
 
-	if (PokedexWidget && PokedexWidget->IsInViewport())
-	{
-		PokedexWidget->RemoveFromParent();
-		FermerWidget(PC);
-	}
-	else
-	{
-		if (bUIWidgetOuvert) return;
+    if (PokedexWidget && PokedexWidget->IsInViewport())
+    {
+       PokedexWidget->RemoveFromParent();
+       FermerWidget(PC);
+    }
+    else
+    {
+       if (bUIWidgetOuvert) 
+       {
+          if (PauseMenuWidget && PauseMenuWidget->IsInViewport()) {
+             PauseMenuWidget->RemoveFromParent();
+             UGameplayStatics::SetGamePaused(GetWorld(), false);
+          }
+          if (InventaireWidget && InventaireWidget->IsInViewport()) {
+             InventaireWidget->RemoveFromParent();
+          }
+       }
 
-		if (!PokedexWidgetClass) return;
+       if (!PokedexWidgetClass) return;
+       if (!PokedexWidget) PokedexWidget = CreateWidget<UPokedexWidget>(PC, PokedexWidgetClass);
+       else PokedexWidget->Rafraichir();
 
-		if (!PokedexWidget)
-		{
-			PokedexWidget = CreateWidget<UPokedexWidget>(PC, PokedexWidgetClass);
-		}
-		else
-		{
-			PokedexWidget->Rafraichir();
-		}
-
-		if (PokedexWidget)
-		{
-			OuvrirWidget(PokedexWidget, PC);
-		}
-	}
+       if (PokedexWidget) OuvrirWidget(PokedexWidget, PC);
+    }
 }
 
 void AFishyCollectorCharacter::ToggleShop()
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return;
-	if (!ShopWidgetClass) return;
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC || !ShopWidgetClass) return;
 
-	if (ShopWidget && ShopWidget->IsInViewport())
-	{
-		ShopWidget->RemoveFromParent();
-		FermerWidget(PC);
-	}
-	else
-	{
-		if (bUIWidgetOuvert) return;
-
-		if (!ShopWidget)
-		{
-			ShopWidget = CreateWidget<UUserWidget>(PC, ShopWidgetClass);
-		}
-
-		if (ShopWidget)
-		{
-			OuvrirWidget(ShopWidget, PC);
-		}
-	}
+    if (ShopWidget && ShopWidget->IsInViewport())
+    {
+       ShopWidget->RemoveFromParent();
+       FermerWidget(PC);
+    }
+    else
+    {
+       if (bUIWidgetOuvert) return;
+       if (!ShopWidget) ShopWidget = CreateWidget<UUserWidget>(PC, ShopWidgetClass);
+       if (ShopWidget) OuvrirWidget(ShopWidget, PC);
+    }
 }
 
-void AFishyCollectorCharacter::SetNearbyStorage(AFishingRodStorage* Storage)
-{
-	NearbyStorage = Storage;
-}
-/*
-void AFishyCollectorCharacter::EquipRod(TSubclassOf<AFishingRod> NewRodClass)
-{
-	if (!NewRodClass) return;
-
-	if (FishingRod)
-	{
-		FishingRod->DetachFromCharacter();
-		FishingRod->Destroy();
-		FishingRod = nullptr;
-	}
-	FishingRod = GetWorld()->SpawnActor<AFishingRod>(NewRodClass);
-	if (FishingRod)
-	{
-		FishingRod->AttachToCharacter(this);
-	}
-}*/
+void AFishyCollectorCharacter::SetNearbyStorage(AFishingRodStorage* Storage) { NearbyStorage = Storage; }
 
 void AFishyCollectorCharacter::EquipRodFromData(UFishingRodData* RodData)
 {
-	if (!RodData || !RodData->RodClass) return;
+    if (!RodData || !RodData->RodClass) return;
 
-	if (FishingRod)
-	{
-		FishingRod->DetachFromCharacter();
-		FishingRod->Destroy();
-		FishingRod = nullptr;
-	}
-	FishingRod = GetWorld()->SpawnActor<AFishingRod>(RodData->RodClass);
-	if (FishingRod)
-	{
-		FishingRod->AttachToCharacter(this);
-		FishingRod->SetRodData(RodData);
-		EquippedFishingRod = RodData;
-	}
+    if (FishingRod)
+    {
+       FishingRod->DetachFromCharacter();
+       FishingRod->Destroy();
+    }
+    FishingRod = GetWorld()->SpawnActor<AFishingRod>(RodData->RodClass);
+    if (FishingRod)
+    {
+       FishingRod->AttachToCharacter(this);
+       FishingRod->SetRodData(RodData);
+       EquippedFishingRod = RodData;
+    }
 }
 
 void AFishyCollectorCharacter::UnequipRod()
 {
-	if (!FishingRod) return;
-	FishingRod->DetachFromCharacter();
-	FishingRod->Destroy();
-	FishingRod = nullptr;
+    if (!FishingRod) return;
+    FishingRod->DetachFromCharacter();
+    FishingRod->Destroy();
+    FishingRod = nullptr;
 }
 
 TSubclassOf<AFishingRod> AFishyCollectorCharacter::GetCurrentRodClass() const
 {
-	if (!FishingRod) return nullptr;
-	return FishingRod->GetClass();
+    return FishingRod ? FishingRod->GetClass() : nullptr;
 }
 
 void AFishyCollectorCharacter::JumpSiPokedexFerme()
 {
-	if (bUIWidgetOuvert) return;
-	Jump();
+    if (!bUIWidgetOuvert) Jump();
 }
 
 UFishyBaseWidget* AFishyCollectorCharacter::GetWidgetOuvert() const
 {
-	// Le popup a priorité : il est "au-dessus" du widget parent
-	if (PopupActif && PopupActif->IsInViewport()) return PopupActif;
-	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(PokedexWidget);   W && W->IsInViewport()) return W;
-	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(ShopWidget);      W && W->IsInViewport()) return W;
-	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(InventaireWidget);W && W->IsInViewport()) return W;
-	if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(MapWidget);       W && W->IsInViewport()) return W;
-	return nullptr;
+    if (PopupActif && PopupActif->IsInViewport()) return PopupActif;
+    if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(PokedexWidget);   W && W->IsInViewport()) return W;
+    if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(ShopWidget);      W && W->IsInViewport()) return W;
+    if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(InventaireWidget);W && W->IsInViewport()) return W;
+    if (UFishyBaseWidget* W = Cast<UFishyBaseWidget>(MapWidget);       W && W->IsInViewport()) return W;
+    return nullptr;
 }
 
-void AFishyCollectorCharacter::SetPopupActif(UFishyBaseWidget* Popup)
-{
-	PopupActif = Popup;
-}
+void AFishyCollectorCharacter::SetPopupActif(UFishyBaseWidget* Popup) { PopupActif = Popup; }
 
 void AFishyCollectorCharacter::PokedexRoterGauche()
 {
-	if (!bUIWidgetOuvert) return;
-	if (UFishyBaseWidget* Widget = GetWidgetOuvert())
-		Widget->NaviguerGauche();
+    if (bUIWidgetOuvert) if (UFishyBaseWidget* Widget = GetWidgetOuvert()) Widget->NaviguerGauche();
 }
 
 void AFishyCollectorCharacter::PokedexRoterDroite()
 {
-	if (!bUIWidgetOuvert) return;
-	if (UFishyBaseWidget* Widget = GetWidgetOuvert())
-		Widget->NaviguerDroite();
+    if (bUIWidgetOuvert) if (UFishyBaseWidget* Widget = GetWidgetOuvert()) Widget->NaviguerDroite();
 }
 
 void AFishyCollectorCharacter::ToggleInventaire()
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return;
-	if (!InventaireWidgetClass) return;
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC || !InventaireWidgetClass) return;
 
-	// Inventaire déjà ouvert → fermer
-	if (bUIWidgetOuvert && InventaireWidget)
-	{
-		InventaireWidget->RemoveFromParent();
-		InventaireWidget = nullptr;
-		FermerWidget(PC);
-		return;
-	}
+    if (bUIWidgetOuvert && InventaireWidget)
+    {
+       InventaireWidget->RemoveFromParent();
+       InventaireWidget = nullptr;
+       FermerWidget(PC);
+       return;
+    }
 
-	// Tout autre widget ouvert → ne rien faire
-	if (bUIWidgetOuvert) return;
+    if (bUIWidgetOuvert) return;
 
-	// Toujours recréer pour éviter les doublons
-	InventaireWidget = CreateWidget<UUserWidget>(PC, InventaireWidgetClass);
-
-	if (InventaireWidget)
-	{
-		OuvrirWidget(InventaireWidget, PC);
-	}
+    InventaireWidget = CreateWidget<UUserWidget>(PC, InventaireWidgetClass);
+    if (InventaireWidget) OuvrirWidget(InventaireWidget, PC);
 }
 
 void AFishyCollectorCharacter::NaviguerUI(float X, float Y)
 {
-	// Popup ouvert → ne pas naviguer dans le widget parent derrière
-	if (PopupActif && PopupActif->IsInViewport()) return;
+    if (PopupActif && PopupActif->IsInViewport()) return;
 
-	constexpr float Seuil = 0.5f;
+    constexpr float Seuil = 0.5f;
+    if (FMath::Abs(X) < Seuil && FMath::Abs(Y) < Seuil)
+    {
+       DernierNavigationUI = 0.f;
+       return;
+    }
 
-	// Joystick au centre → reset debounce pour réactivité immédiate au prochain push
-	if (FMath::Abs(X) < Seuil && FMath::Abs(Y) < Seuil)
-	{
-		DernierNavigationUI = 0.f;
-		return;
-	}
+    const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+    constexpr float Debounce = 0.18f;
+    if (Now - DernierNavigationUI < Debounce) return;
+    DernierNavigationUI = Now;
 
-	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
-	constexpr float Debounce = 0.18f;
-	if (Now - DernierNavigationUI < Debounce) return;
-	DernierNavigationUI = Now;
+    FKey NavKey;
+    if (FMath::Abs(X) >= FMath::Abs(Y))
+       NavKey = (X > 0.f) ? EKeys::Gamepad_DPad_Right : EKeys::Gamepad_DPad_Left;
+    else
+       NavKey = (Y > 0.f) ? EKeys::Gamepad_DPad_Up : EKeys::Gamepad_DPad_Down;
 
-	// Direction dominante → événement D-pad correspondant injecté dans Slate
-	FKey NavKey;
-	if (FMath::Abs(X) >= FMath::Abs(Y))
-		NavKey = (X > 0.f) ? EKeys::Gamepad_DPad_Right : EKeys::Gamepad_DPad_Left;
-	else
-		NavKey = (Y > 0.f) ? EKeys::Gamepad_DPad_Up : EKeys::Gamepad_DPad_Down;
-
-	FKeyEvent Down(NavKey, FModifierKeysState(), 0, false, 0, 0);
-	FKeyEvent Up  (NavKey, FModifierKeysState(), 0, false, 0, 0);
-	FSlateApplication::Get().ProcessKeyDownEvent(Down);
-	FSlateApplication::Get().ProcessKeyUpEvent(Up);
+    FKeyEvent Down(NavKey, FModifierKeysState(), 0, false, 0, 0);
+    FKeyEvent Up(NavKey, FModifierKeysState(), 0, false, 0, 0);
+    FSlateApplication::Get().ProcessKeyDownEvent(Down);
+    FSlateApplication::Get().ProcessKeyUpEvent(Up);
 }
 
 void AFishyCollectorCharacter::AccepterUI()
 {
-	// Popup ouvert → ne pas cliquer sur le widget parent derrière
-	if (PopupActif && PopupActif->IsInViewport()) return;
+    if (PopupActif && PopupActif->IsInViewport()) return;
 
-	// Injecter Enter (pas Gamepad_FaceButton_Bottom qui est bloqué par NativeOnPreviewKeyDown)
-	FKeyEvent Down(EKeys::Enter, FModifierKeysState(), 0, false, 0, 0);
-	FKeyEvent Up(EKeys::Enter, FModifierKeysState(), 0, false, 0, 0);
-	FSlateApplication::Get().ProcessKeyDownEvent(Down);
-	FSlateApplication::Get().ProcessKeyUpEvent(Up);
+    FKeyEvent Down(EKeys::Enter, FModifierKeysState(), 0, false, 0, 0);
+    FKeyEvent Up(EKeys::Enter, FModifierKeysState(), 0, false, 0, 0);
+    FSlateApplication::Get().ProcessKeyDownEvent(Down);
+    FSlateApplication::Get().ProcessKeyUpEvent(Up);
 }
 
 void AFishyCollectorCharacter::OuvrirWidget(UUserWidget* Widget, APlayerController* PC)
 {
-	if (!Widget || !PC) return;
+    if (!Widget || !PC) return;
+    bUIWidgetOuvert = true;
+    Widget->AddToViewport();
 
-	bUIWidgetOuvert = true;
-	Widget->AddToViewport();
+    FInputModeGameAndUI InputMode;
+    InputMode.SetWidgetToFocus(Widget->TakeWidget());
+    PC->SetInputMode(InputMode);
+    PC->SetShowMouseCursor(true);
+    PC->SetIgnoreMoveInput(true);
+    PC->SetIgnoreLookInput(true);
 
-	FInputModeGameAndUI InputMode;
-	InputMode.SetWidgetToFocus(Widget->TakeWidget());
-	PC->SetInputMode(InputMode);
-	PC->SetShowMouseCursor(true);
-	PC->SetIgnoreMoveInput(true);
-	PC->SetIgnoreLookInput(true);
-
-	if (!Cast<UFishyBaseWidget>(Widget))
-		Widget->SetUserFocus(PC);
+    if (!Cast<UFishyBaseWidget>(Widget)) Widget->SetUserFocus(PC);
 }
 
 void AFishyCollectorCharacter::FermerWidget(APlayerController* PC)
 {
-	if (!PC) return;
-
-	bUIWidgetOuvert = false;
-	PC->SetInputMode(FInputModeGameOnly());
-	PC->SetShowMouseCursor(false);
-	PC->ResetIgnoreMoveInput();
-	PC->ResetIgnoreLookInput();
-}
-
-void AFishyCollectorCharacter::FermerInventaire()
-{
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return;
-
-	if (InventaireWidget && InventaireWidget->IsInViewport())
-	{
-		InventaireWidget->RemoveFromParent();
-		InventaireWidget = nullptr;
-	}
-	FermerWidget(PC);
+    if (!PC) return;
+    bUIWidgetOuvert = false;
+    PC->SetInputMode(FInputModeGameOnly());
+    PC->SetShowMouseCursor(false);
+    PC->ResetIgnoreMoveInput();
+    PC->ResetIgnoreLookInput();
 }
 
 void AFishyCollectorCharacter::RetourGeneral()
 {
-	if (!bUIWidgetOuvert) return;
+    if (!bUIWidgetOuvert) return;
 
-	// Laisser le widget gérer le retour lui-même (ex : fermer un popup interne)
-	if (UFishyBaseWidget* W = GetWidgetOuvert())
-	{
-		if (W->GererRetour())
-		{
-			// Si c'était un popup, l'effacer et remettre le focus sur le widget parent
-			if (W == PopupActif)
-			{
-				PopupActif = nullptr;
-				if (UFishyBaseWidget* Parent = GetWidgetOuvert())
-					Parent->InitialiserFocusGamepad();
-			}
-			return;
-		}
-	}
+    if (UFishyBaseWidget* W = GetWidgetOuvert())
+    {
+       if (W->GererRetour())
+       {
+          if (W == PopupActif)
+          {
+             PopupActif = nullptr;
+             if (UFishyBaseWidget* Parent = GetWidgetOuvert()) Parent->InitialiserFocusGamepad();
+          }
+          return;
+       }
+    }
 
-	// Ajout pour la Map
-	if (MapWidget && MapWidget->IsInViewport())
-	{
-		ToggleMap();
-		return;
-	}
+    if (MapWidget && MapWidget->IsInViewport()) { ToggleMap(); return; }
+    if (PokedexWidget && PokedexWidget->IsInViewport()) {
+       if (PokedexWidget->EstDetailVisible()) PokedexWidget->RetourListe();
+       else TogglePokedex();
+       return;
+    }
+    if (ShopWidget && ShopWidget->IsInViewport()) { ToggleShop(); return; }
+    if (InventaireWidget && InventaireWidget->IsInViewport()) { ToggleInventaire(); return; }
+    if (NearbyStorage) { NearbyStorage->CloseStorage(); return; }
 
-	// Pokédex : détail → liste, liste → fermer
-	if (PokedexWidget && PokedexWidget->IsInViewport())
-	{
-		if (PokedexWidget->EstDetailVisible())
-			PokedexWidget->RetourListe();
-		else
-			TogglePokedex();
-		return;
-	}
-
-	// Shop
-	if (ShopWidget && ShopWidget->IsInViewport())
-	{
-		ToggleShop();
-		return;
-	}
-
-	// Inventaire
-	if (InventaireWidget && InventaireWidget->IsInViewport())
-	{
-		ToggleInventaire();
-		return;
-	}
-
-	// Storage
-	if (NearbyStorage)
-	{
-		NearbyStorage->CloseStorage();
-		return;
-	}
-
-	// Fallback : widget inconnu ouvert depuis Blueprint → reset propre
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	FermerWidget(PC);
+    FermerWidget(Cast<APlayerController>(GetController()));
 }
 
 void AFishyCollectorCharacter::HandleEscape()
 {
-	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
-	{
-		TogglePauseMenu(); 
-		return;
-	}
-
-	if (bUIWidgetOuvert)
-	{
-		RetourGeneral();
-	}
-	else
-	{
-		TogglePauseMenu();
-	}
+    if (PauseMenuWidget && PauseMenuWidget->IsInViewport()) { TogglePauseMenu(); return; }
+    if (bUIWidgetOuvert) RetourGeneral();
+    else TogglePauseMenu();
 }
 
 void AFishyCollectorCharacter::TogglePauseMenu()
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC || !PauseMenuWidgetClass) return;
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC || !PauseMenuWidgetClass) return;
 
-	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
-	{
-		PauseMenuWidget->RemoveFromParent();
-		UGameplayStatics::SetGamePaused(GetWorld(), false); // Indispensable
-		FermerWidget(PC); 
-	}
-	else
-	{
-		if (!PauseMenuWidget)
-		{
-			PauseMenuWidget = CreateWidget<UUserWidget>(PC, PauseMenuWidgetClass);
-		}
-
-		if (PauseMenuWidget)
-		{
-			OuvrirWidget(PauseMenuWidget, PC);
-			UGameplayStatics::SetGamePaused(GetWorld(), true); // On met en pause APRES avoir ouvert/focus
-		}
-	}
-}
-
-void AFishyCollectorCharacter::OpenCollectionFromMenu()
-{
-	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
-	{
-		PauseMenuWidget->RemoveFromParent();
-		UGameplayStatics::SetGamePaused(GetWorld(), false);
-	}
-
-	TogglePokedex();
+    if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+    {
+       PauseMenuWidget->RemoveFromParent();
+       UGameplayStatics::SetGamePaused(GetWorld(), false);
+       FermerWidget(PC); 
+    }
+    else
+    {
+       if (!PauseMenuWidget) PauseMenuWidget = CreateWidget<UUserWidget>(PC, PauseMenuWidgetClass);
+       if (PauseMenuWidget) {
+          OuvrirWidget(PauseMenuWidget, PC);
+          UGameplayStatics::SetGamePaused(GetWorld(), true);
+       }
+    }
 }
 
 void AFishyCollectorCharacter::ToggleMap()
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC || !MapWidgetClass) return;
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC || !MapWidgetClass) return;
 
-	if (MapWidget && MapWidget->IsInViewport())
-	{
-		MapWidget->RemoveFromParent();
-		FermerWidget(PC);
-	}
-	else
-	{
-		if (bUIWidgetOuvert) return;
-		// On crée le widget s'il n'existe pas encore
-		if (!MapWidget)
-		{
-			MapWidget = CreateWidget<UUserWidget>(PC, MapWidgetClass);
-		}
-
-		if (MapWidget)
-		{
-			OuvrirWidget(MapWidget, PC);
-		}
-	}
+    if (MapWidget && MapWidget->IsInViewport())
+    {
+       MapWidget->RemoveFromParent();
+       FermerWidget(PC);
+    }
+    else
+    {
+       if (bUIWidgetOuvert) return;
+       if (!MapWidget) MapWidget = CreateWidget<UUserWidget>(PC, MapWidgetClass);
+       if (MapWidget) OuvrirWidget(MapWidget, PC);
+    }
 }
