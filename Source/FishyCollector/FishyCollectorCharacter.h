@@ -222,6 +222,16 @@ public:
 	void OuvrirWidget(UUserWidget* Widget, APlayerController* PC);
 	void FermerWidget(APlayerController* PC);
 private:
+
+	float LastQTEInputTime = 0.0f;
+
+	// Temps d'attente minimum entre deux inputs (ex: 0.2 secondes)
+	UPROPERTY(EditAnywhere, Category = "Fishing")
+	float QTEInputCooldown = 0.2f;
+
+	// Fonction centralisée pour éviter la répétition
+	void ProcessFishingInput();
+	
 	class UFishyBaseWidget* GetWidgetOuvert() const;
 
 	// Navigation joystick → grid (injection D-pad dans Slate)
