@@ -95,6 +95,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	// Bloque Gamepad_FaceButton_Bottom avant qu'il atteigne les boutons enfants.
 	// Seul AccepterUI() (qui injecte Enter) peut valider un bouton en focus.

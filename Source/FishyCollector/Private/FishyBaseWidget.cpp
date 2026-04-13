@@ -33,6 +33,20 @@ void UFishyBaseWidget::NativeConstruct()
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UFishyBaseWidget::AppliquerFocusInitial);
 }
 
+void UFishyBaseWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	// Quand ce widget se ferme, remettre le focus sur le widget parent encore ouvert.
+	// SetTimerForNextTick : laisse une frame pour que RemoveFromParent soit effectif
+	// avant que GetWidgetOuvert() cherche le prochain widget.
+	if (AFishyCollectorCharacter* Char = Cast<AFishyCollectorCharacter>(GetOwningPlayerPawn()))
+	{
+		if (UWorld* World = GetWorld())
+			World->GetTimerManager().SetTimerForNextTick(Char, &AFishyCollectorCharacter::ReFocuserWidgetActif);
+	}
+}
+
 static void InjecterTouche(FKey Key)
 {
 	FKeyEvent Down(Key, FModifierKeysState(), 0, false, 0, 0);

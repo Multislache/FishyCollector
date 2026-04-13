@@ -207,6 +207,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void RetourGeneral();
 
+	// Remet le focus sur le widget actuellement ouvert — appelé après fermeture d'un popup.
+	UFUNCTION()
+	void ReFocuserWidgetActif();
+
 private:
 	void Interact();
 	void TogglePokedex();

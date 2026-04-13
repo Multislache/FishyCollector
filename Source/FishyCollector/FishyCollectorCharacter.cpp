@@ -732,6 +732,12 @@ void AFishyCollectorCharacter::ToggleMap()
 	}
 }
 
+void AFishyCollectorCharacter::ReFocuserWidgetActif()
+{
+	if (UFishyBaseWidget* W = GetWidgetOuvert())
+		W->InitialiserFocusGamepad();
+}
+
 void AFishyCollectorCharacter::ProcessFishingInput()
 {
 	if (!FishingRod || FishingRod->GetCurrentState() != EFishingRodState::Morsure)
