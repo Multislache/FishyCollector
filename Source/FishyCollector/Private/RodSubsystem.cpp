@@ -3,6 +3,7 @@
 
 #include "RodSubsystem.h"
 #include "FishySaveGame.h"
+#include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
 
 void URodSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -86,5 +87,21 @@ void URodSubsystem::LoadRod()
 		}
 	}
 	else UE_LOG(LogTemp, Warning, TEXT("No save game found or failed to load."));
-	
+}
+
+TArray<UFishingRodData*> URodSubsystem::GetOwnedRodDataAssets() const
+{
+	TArray<UFishingRodData*> Result;
+	UAssetManager* AM = UAssetManager::GetIfInitialized();
+	if (!AM) return Result;
+
+	for (const FPrimaryAssetId& RodId : OwnedRods)
+	{
+		UFishingRodData* RodData = Cast<UFishingRodData>(AM->GetPrimaryAssetObject(RodId));
+		if (RodData)
+		{
+			Result.Add(RodData);
+		}
+	}
+	return Result;
 }

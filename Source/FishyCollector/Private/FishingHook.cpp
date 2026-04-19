@@ -39,24 +39,18 @@ void AFishingHook::OnHookOverlap(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    // On ignore les overlaps avec le proprio et la canne
     if (!OtherActor || OtherActor == GetOwner()) return;
 
-    // Vérifier si l'acteur touché a le tag "water"
     if (OtherActor->ActorHasTag(FName("water")))
     {
-        // Surface valide → notifier la canne que l'hameçon est dans l'eau
         OnHookLanded.Broadcast();
     }
     else
     {
-        // Mauvaise surface → jouer le son et détruire
         if (WrongSurfaceSound)
         {
             UGameplayStatics::PlaySoundAtLocation(this, WrongSurfaceSound, GetActorLocation());
         }
         OnHookInvalidSurface.Broadcast();
-
-        
     }
 }

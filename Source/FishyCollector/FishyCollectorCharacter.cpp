@@ -251,7 +251,7 @@ void AFishyCollectorCharacter::ClickInteractionManager()
 	}
 }
 
-void AFishyCollectorCharacter::DoThrowLine_Implementation()
+/*void AFishyCollectorCharacter::DoThrowLine_Implementation()
 {
 	if (!FishingRod) return;
 
@@ -263,6 +263,21 @@ void AFishyCollectorCharacter::DoThrowLine_Implementation()
 			FRotator YawOnly = FRotator(0.f, C->GetControlRotation().Yaw, 0.f);
 			LaunchDirection = FRotationMatrix(YawOnly).GetUnitAxis(EAxis::X);
 		}
+		FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
+	}
+	else
+	{
+		FishingRod->SetState(EFishingRodState::Repos);
+	}
+}*/
+
+void AFishyCollectorCharacter::DoThrowLine_Implementation()
+{
+	if (!FishingRod) return;
+
+	if (FishingRod->GetCurrentState() == EFishingRodState::Repos)
+	{
+		FVector LaunchDirection = GetActorForwardVector();
 		FishingRod->SetState(EFishingRodState::Lance, LaunchDirection);
 	}
 	else
@@ -365,23 +380,6 @@ void AFishyCollectorCharacter::SetNearbyStorage(AFishingRodStorage* Storage)
 {
 	NearbyStorage = Storage;
 }
-/*
-void AFishyCollectorCharacter::EquipRod(TSubclassOf<AFishingRod> NewRodClass)
-{
-	if (!NewRodClass) return;
-
-	if (FishingRod)
-	{
-		FishingRod->DetachFromCharacter();
-		FishingRod->Destroy();
-		FishingRod = nullptr;
-	}
-	FishingRod = GetWorld()->SpawnActor<AFishingRod>(NewRodClass);
-	if (FishingRod)
-	{
-		FishingRod->AttachToCharacter(this);
-	}
-}*/
 
 void AFishyCollectorCharacter::EquipRodFromData(UFishingRodData* RodData)
 {

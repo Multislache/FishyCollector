@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "FishingRodData.h"
 #include "RodSubsystem.generated.h"
 
 /**
@@ -55,5 +56,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LoadRod();
-	
+
+	UFUNCTION(BlueprintCallable)
+	TArray<UFishingRodData*> GetOwnedRodDataAssets() const;
 };
