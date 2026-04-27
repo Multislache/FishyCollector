@@ -119,6 +119,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
 	UAnimMontage* ThrowRodMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Animations")
+	UAnimMontage* FishingIdleMontage;
+
 	UFUNCTION(BlueprintCallable, Category = "Fishing")
 	void EndMiniGame(bool bSuccess, UPoissonTemplate* CaughtFish);
 

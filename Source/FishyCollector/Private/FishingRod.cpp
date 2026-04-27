@@ -111,34 +111,70 @@ bool AFishingRod::CanTransitionTo(EFishingRodState NewState) const
 
 void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFishingRodState NewState, FVector LaunchDirection)
 {
+    APlayerController* PC = OwnerCharacter ? Cast<APlayerController>(OwnerCharacter->GetController()) : nullptr;
+
+    // Gestion du widget QTE
     if (FishingHook && FishingHook->GetQTEWidgetComponent())
     {
-        if (NewState == EFishingRodState::Morsure)
+        if (NewState != EFishingRodState::Morsure)
         {
-            // La visibilité est gérée dans TriggerFishBite, on peut la forcer ici au besoin
-        }
-        else
-        {
-            // On cache le widget pour tous les autres états
             FishingHook->GetQTEWidgetComponent()->SetVisibility(false);
             FishingWidgetInstance = nullptr;
         }
     }
+
     switch (NewState)
     {
     case EFishingRodState::Repos:
         GetWorldTimerManager().ClearAllTimersForObject(this);
+        
         if (FishingLine) FishingLine->SetVisibility(false);
         if (FishingHook) FishingHook->SetActorHiddenInGame(true);
+
+        // --- ATTACHEMENT AU SOCKET DE MARCHE (Dos ou Ceinture) ---
+        if (OwnerCharacter)
+        {
+            SetActorHiddenInGame(false); // On s'assure qu'elle est visible
+            AttachToComponent(OwnerCharacter->GetMesh(), 
+                FAttachmentTransformRules::SnapToTargetIncludingScale, 
+                FName("Walk")); 
+        }
+
+        // Arrêt animation
+        if (OwnerCharacter && FishingIdleMontage)
+        {
+            OwnerCharacter->StopAnimMontage(FishingIdleMontage);
+        }
+
+        // Libération mouvements
+        if (PC)
+        {
+            PC->SetIgnoreMoveInput(false);
+            PC->SetIgnoreLookInput(false);
+        }
         break;
 
     case EFishingRodState::Lance:
         if (!OwnerCharacter || !FishingHook) return;
+
+        // --- PASSAGE AU SOCKET DE LA MAIN POUR L'ACTION ---
+        SetActorHiddenInGame(false);
+        AttachToComponent(OwnerCharacter->GetMesh(), 
+            FAttachmentTransformRules::SnapToTargetIncludingScale, 
+            FName("Hand_R_Socket"));
+
+        if (PC)
+        {
+            PC->SetIgnoreMoveInput(true);   
+            PC->SetIgnoreLookInput(false); // Caméra libre
+        }
+
         if (FishingLine) FishingLine->SetVisibility(true);
         if (RodSound) UGameplayStatics::PlaySoundAtLocation(this, RodSound, GetActorLocation());
 
         {
             OwnerCharacter->PlayAnimMontage(ThrowRodMontage);
+
             FVector ForwardDirection = LaunchDirection.IsNearlyZero() ? OwnerCharacter->GetActorForwardVector() : LaunchDirection;
             FVector TraceStart = OwnerCharacter->GetActorLocation() + ForwardDirection * 500.f + FVector(0.f, 0.f, 500.f);
             FVector TraceEnd = TraceStart + FVector(0.f, 0.f, -2000.f);
@@ -159,6 +195,12 @@ void AFishingRod::OnStateChanged_Implementation(EFishingRodState OldState, EFish
 
     case EFishingRodState::Attente:
         if (FishingHook && SplashSound) UGameplayStatics::PlaySoundAtLocation(this, SplashSound, FishingHook->GetActorLocation());
+        
+        if (OwnerCharacter && FishingIdleMontage)
+        {
+            OwnerCharacter->PlayAnimMontage(FishingIdleMontage);
+        }
+
         StartWaitingForBite();
         break;
 

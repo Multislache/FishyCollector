@@ -30,7 +30,7 @@ void AFishyCollectorCharacter::BeginPlay()
 		FishingRod = GetWorld()->SpawnActor<AFishingRod>(FishingRodClass);
 		if (FishingRod)
 		{
-			FishingRod->AttachToCharacter(this);
+			FishingRod->AttachToCharacter(this, "Walk");
 		}
 	}
 }
