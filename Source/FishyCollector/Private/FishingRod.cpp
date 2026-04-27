@@ -67,8 +67,11 @@ void AFishingRod::AttachToCharacter(ACharacter* Character, FName SocketName)
 {
     if (!Character) return;
     OwnerCharacter = Character;
-    AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+    AttachToComponent(OwnerCharacter->GetMesh(), 
+                FAttachmentTransformRules::SnapToTargetIncludingScale, 
+                FName("Walk")); 
 }
+
 
 void AFishingRod::DetachFromCharacter()
 {
